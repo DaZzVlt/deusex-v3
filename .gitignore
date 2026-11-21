@@ -1,0 +1,50 @@
+# Python & uv
+.venv/
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+build/
+dist/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Secretos, credenciales y datos de usuario
+.env
+.env.*
+secrets/
+settings.json
+*.db
+*.db-wal
+*.db-shm
+
+# Runtimes pesados y modelos locales (se preparan en USER_DATA_DIR)
+models/
+runtimes/
+node_modules/
+
+# Logs y temporales de trabajo / entregas puente
+*.log
+*.tmp
+Latest Debug.txt
+_entrega_*.md
+
+# Empaquetado Windows y APK Android
+packaging/output/
+mobile_app/.gradle/
+mobile_app/build/
+mobile_app/app/build/
+*.apk
+*.aab
+*.jks
+*.keystore
+
+# IDE y sistema operativo
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

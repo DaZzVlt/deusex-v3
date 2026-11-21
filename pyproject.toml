@@ -1,0 +1,111 @@
+[build-system]
+requires = ["hatchling>=1.27.0"]
+build-backend = "hatchling.build"
+
+[project]
+name = "deusex"
+version = "3.0.0"
+description = "DeusEx v3 — Asistente personal modular local-first para Windows 11"
+readme = "DESIGN_V3.md"
+requires-python = ">=3.14,<3.15"
+dependencies = [
+    # UI nativa Fluent (Qt 6)
+    "PySide6>=6.12.0",
+
+    # Configuración, Cerebro IA y transporte HTTP/WS
+    "pydantic>=2.10.0",
+    "google-genai>=1.0.0",
+    "httpx>=0.28.0",
+    "websockets>=14.0",
+
+    # Audio, DSP/Biometría NumPy, Vosk offline y TTS
+    "numpy>=2.2.0",
+    "vosk>=0.3.45",
+    "sounddevice>=0.5.1",
+    "edge-tts>=7.0.0",
+
+    # Windows 11 nativo (COM, pycaw, UIA, SMTC)
+    "pycaw>=20240210; sys_platform == 'win32'",
+    "comtypes>=1.4.8; sys_platform == 'win32'",
+    "uiautomation>=2.0.20; sys_platform == 'win32'",
+    "winrt-runtime>=3.0; sys_platform == 'win32'",
+    "winrt-Windows.Foundation>=3.0; sys_platform == 'win32'",
+    "winrt-Windows.Media.Control>=3.0; sys_platform == 'win32'",
+    "winrt-Windows.Storage.Streams>=3.0; sys_platform == 'win32'",
+
+    # PC Local, Visión, Inteligencia Web y Extractores
+    "psutil>=6.1.0",
+    "nvidia-ml-py>=12.560.0",
+    "send2trash>=1.8.3",
+    "mss>=10.0.0",
+    "Pillow>=11.0.0",
+    "trafilatura>=2.0.0",
+    "pypdf>=5.0.0",
+    "youtube-transcript-api>=1.0.0",
+
+    # Red Local, Música y QR
+    "zeroconf>=0.136.0",
+    "pychromecast>=14.0.0",
+    "mutagen>=1.47.0",
+    "qrcode>=8.0",
+
+    # Discord (DAVE E2EE, sin discord-ext-voice-recv)
+    "discord.py>=2.6.0",
+    "davey>=0.1.0",
+    "PyNaCl>=1.5.0",
+    "audioop-lts>=0.2.1",
+    "yt-dlp>=2025.1.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.3.0",
+    "pytest-asyncio>=0.25.0",
+    "pytest-qt>=4.4.0",
+    "ruff>=0.9.0",
+    "mypy>=1.14.0",
+    "pyinstaller>=6.12.0",
+]
+voice-azure = [
+    "azure-cognitiveservices-speech>=1.42.0",
+]
+
+[project.scripts]
+deusex = "deusex.main:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/deusex"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra --strict-markers"
+asyncio_mode = "auto"
+qt_api = "pyside6"
+markers = [
+    "live: smoke tests reales contra Windows 11, APIs externas o LAN (opt-in con -m live)",
+    "ui: pruebas de interfaz gráfica con pytest-qt",
+]
+
+[tool.ruff]
+target-version = "py314"
+line-length = 100
+src = ["src", "tests", "scripts"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "SIM", "RUF", "ASYNC"]
+ignore = ["E501"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["deusex"]
+force-sort-within-sections = true
+
+[tool.mypy]
+python_version = "3.14"
+strict = true
+mypy_path = "src"
+packages = ["deusex"]
+namespace_packages = true
+explicit_package_bases = true
+ignore_missing_imports = true
+warn_unused_ignores = true
+warn_redundant_casts = true
