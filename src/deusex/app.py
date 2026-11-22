@@ -31,6 +31,7 @@ from deusex.core.permissions import Permission
 from deusex.core.runtime import RuntimeServices
 from deusex.core.scheduler import LocalScheduler
 from deusex.core.system_tools import EarconPlayer, GlobalHotkeyManager
+from deusex.modules.network.module import NetworkModule
 from deusex.modules.pc.module import PCModule
 
 logger = logging.getLogger(__name__)
@@ -100,6 +101,8 @@ class DeusExApplication:
 
         # Registro de módulos enchufables disponibles (Zero-Base: se activan según settings.json)
         self.register_module(PCModule())
+        self.network_module = NetworkModule()
+        self.register_module(self.network_module)
 
         self._started = False
         self._unsubscribers: list[object] = []
