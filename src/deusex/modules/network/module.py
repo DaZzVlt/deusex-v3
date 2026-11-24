@@ -60,6 +60,13 @@ _SEND_YOUTUBE_RE = re.compile(
     re.IGNORECASE,
 )
 
+_LAUNCH_APP_RE = re.compile(
+    r"^(?:abre|abrir|pon|poner|ejecuta|ejecutar|inicia|iniciar|lanza|lanzar)\s+"
+    r"(?P<app>youtube|netflix|spotify|disney(?:\s+plus|\+)?|prime(?:\s+video)?|max|hbo|twitch|browser|navegador)\s+"
+    r"(?:en|a)\s+(?:la\s+|el\s+)?(?P<target>(?:tv|tele|televisor|samsung|chromecast)(?:\s+[\w-]+){0,3})\s*$",
+    re.IGNORECASE,
+)
+
 _PROJECT_CONNECT_RE = re.compile(
     r"^(?P<mode>proyecta(?:r)?|transmite|transmitir|duplica(?:r)?|extiende|extender)\s+"
     r"(?:mi\s+|la\s+)?pantalla(?:\s+(?:a|en|hacia)\s+(?:la\s+|el\s+)?(?P<target>.+?))?\s*$",
@@ -1319,7 +1326,38 @@ class NetworkModule(BaseModule):
                 action = "stop"
             return await self.control_media(target, action=action)
 
+        async def _fp_launch_app(m: re.Match[str], _raw: str) -> ToolResult:
+            app_raw = (m.group("app") or "").strip().lower()
+            target = (m.group("target") or "").strip()
+            canonical_map = {
+                "youtube": "YouTube",
+                "netflix": "Netflix",
+                "spotify": "Spotify",
+                "disney": "Disney+",
+                "disney plus": "Disney+",
+                "disney+": "Disney+",
+                "prime": "Prime Video",
+                "prime video": "Prime Video",
+                "max": "Max",
+                "hbo": "Max",
+                "twitch": "Twitch",
+                "browser": "Browser",
+                "navegador": "Browser",
+            }
+            app_canonical = canonical_map.get(app_raw, app_raw.capitalize())
+            return await self.launch_tv_app(target, app=app_canonical)
+
         return [
+            FastPathRule(
+                rule_id="network.launch_app",
+                module_id=self.module_id,
+                priority=61,
+                pattern=_LAUNCH_APP_RE,
+                permission=Permission.NETWORK_CONTROL,
+                risk_level=RiskLevel.SAFE,
+                handler=_fp_launch_app,
+                earcon="confirm",
+            ),
             FastPathRule(
                 rule_id="network.scan",
                 module_id=self.module_id,

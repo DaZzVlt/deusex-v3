@@ -1,0 +1,282 @@
+/* DeusEx v3 — Tema Cyber-HUD (Evolución pulida de v1/v2) */
+
+* {
+    font-family: "Segoe UI Variable", "Consolas", "Segoe UI", sans-serif;
+    font-size: 13px;
+    color: #E2F1FF;
+    outline: none;
+}
+
+QMainWindow, QDialog, QWidget#MainRoot, QWidget#MiniChatRoot, QWidget#OnboardingRoot {
+    background-color: #080B12;
+}
+
+QWidget#Sidebar {
+    background-color: #0C111D;
+    border-right: 1px solid {{ACCENT_BORDER}};
+}
+
+QWidget#TopBar {
+    background-color: #0C111D;
+    border-bottom: 1px solid {{ACCENT_BORDER}};
+}
+
+QLabel#SidebarBrand {
+    font-size: 16px;
+    font-weight: 700;
+    color: {{ACCENT}};
+    letter-spacing: 1.2px;
+}
+
+QLabel#ViewTitle {
+    font-size: 20px;
+    font-weight: 600;
+    color: #F0F9FF;
+}
+
+QLabel#ViewSubtitle, QLabel#MutedLabel {
+    font-size: 12px;
+    color: #7DD3FC;
+}
+
+QLabel#CardTitle {
+    font-size: 14px;
+    font-weight: 600;
+    color: #F0F9FF;
+}
+
+QLabel#StatusPill {
+    background-color: rgba(14, 24, 42, 0.90);
+    border: 1px solid {{ACCENT_BORDER}};
+    border-radius: 10px;
+    padding: 4px 10px;
+    font-size: 12px;
+    color: #BAE6FD;
+}
+
+QLabel#StatusPill[state="active"] {
+    background-color: {{ACCENT_SOFT}};
+    border-color: {{ACCENT}};
+    color: {{ACCENT}};
+    font-weight: 600;
+}
+
+QLabel#StatusPill[state="warning"] {
+    background-color: rgba(245, 158, 11, 0.18);
+    border-color: #F59E0B;
+    color: #FCD34D;
+    font-weight: 600;
+}
+
+QLabel#StatusPill[state="danger"] {
+    background-color: rgba(239, 68, 68, 0.22);
+    border-color: #EF4444;
+    color: #FCA5A5;
+    font-weight: 600;
+}
+
+QFrame#FluentCard, QFrame#SettingRow, QFrame#SettingExpander {
+    background-color: #101726;
+    border: 1px solid rgba(56, 189, 248, 0.22);
+    border-radius: 10px;
+}
+
+QFrame#FluentCard:hover, QFrame#SettingRow:hover {
+    border-color: {{ACCENT}};
+}
+
+QFrame#SafetyCard {
+    background-color: #231116;
+    border: 1px solid #F59E0B;
+    border-radius: 10px;
+}
+
+QFrame#ChatBubble[role="user"] {
+    background-color: {{ACCENT_SOFT}};
+    border: 1px solid {{ACCENT}};
+    border-radius: 10px;
+}
+
+QFrame#ChatBubble[role="assistant"] {
+    background-color: #101726;
+    border: 1px solid rgba(56, 189, 248, 0.24);
+    border-radius: 10px;
+}
+
+QFrame#ChatBubble[role="system"] {
+    background-color: #0D1422;
+    border: 1px solid rgba(56, 189, 248, 0.16);
+    border-radius: 10px;
+}
+
+QFrame#MemoryPill {
+    background-color: rgba(16, 185, 129, 0.16);
+    border: 1px solid #10B981;
+    border-radius: 10px;
+}
+
+QFrame#SidebarFooterCard {
+    background-color: #101726;
+    border: 1px solid {{ACCENT_BORDER}};
+    border-radius: 10px;
+}
+
+QPushButton {
+    background-color: #141E33;
+    border: 1px solid {{ACCENT_BORDER}};
+    border-radius: 8px;
+    padding: 7px 14px;
+    min-height: 20px;
+    color: #E2F1FF;
+    font-weight: 500;
+}
+
+QPushButton:hover {
+    background-color: #1A2844;
+    border-color: {{ACCENT}};
+}
+
+QPushButton[variant="primary"] {
+    background-color: {{ACCENT}};
+    border-color: {{ACCENT}};
+    color: {{ACCENT_TEXT}};
+    font-weight: 700;
+}
+
+QPushButton[variant="primary"]:hover {
+    background-color: {{ACCENT_HOVER}};
+}
+
+QPushButton[variant="danger"] {
+    background-color: #DC2626;
+    border-color: #F87171;
+    color: #FFFFFF;
+    font-weight: 700;
+}
+
+QPushButton[variant="ghost"] {
+    background-color: transparent;
+    border: 1px solid transparent;
+    color: #93C5FD;
+}
+
+QPushButton[variant="ghost"]:hover {
+    background-color: {{ACCENT_SOFT}};
+    color: #FFFFFF;
+}
+
+QPushButton[variant="pill"] {
+    background-color: #101726;
+    border: 1px solid {{ACCENT_BORDER}};
+    border-radius: 14px;
+    padding: 5px 12px;
+    font-size: 12px;
+    color: #BAE6FD;
+}
+
+QPushButton[variant="pill"][selected="true"] {
+    background-color: {{ACCENT_SOFT}};
+    border-color: {{ACCENT}};
+    color: {{ACCENT}};
+    font-weight: 700;
+}
+
+QPushButton#SidebarNavButton {
+    background-color: transparent;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    padding: 9px 12px;
+    text-align: left;
+    color: #93C5FD;
+    font-weight: 500;
+}
+
+QPushButton#SidebarNavButton:hover {
+    background-color: {{ACCENT_SOFT}};
+    color: #FFFFFF;
+}
+
+QPushButton#SidebarNavButton[active="true"] {
+    background-color: {{ACCENT_SOFT}};
+    border-left: 3px solid {{ACCENT}};
+    color: {{ACCENT}};
+    font-weight: 700;
+}
+
+QLineEdit, QTextEdit, QPlainTextEdit, QSpinBox, QDoubleSpinBox, QComboBox {
+    background-color: #0C1220;
+    border: 1px solid {{ACCENT_BORDER}};
+    border-radius: 8px;
+    padding: 7px 10px;
+    color: #F0F9FF;
+}
+
+QLineEdit:focus, QTextEdit:focus, QPlainTextEdit:focus, QComboBox:focus {
+    border: 1px solid {{ACCENT}};
+}
+
+QComboBox QAbstractItemView {
+    background-color: #101726;
+    border: 1px solid {{ACCENT}};
+    selection-background-color: {{ACCENT_SOFT}};
+    selection-color: #FFFFFF;
+}
+
+QScrollArea {
+    border: none;
+    background-color: transparent;
+}
+
+QScrollBar:vertical {
+    background: transparent;
+    width: 8px;
+}
+
+QScrollBar::handle:vertical {
+    background: {{ACCENT_BORDER}};
+    border-radius: 4px;
+    min-height: 28px;
+}
+
+QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical,
+QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {
+    background: transparent;
+    height: 0px;
+}
+
+QProgressBar {
+    background-color: #132038;
+    border: 1px solid {{ACCENT_BORDER}};
+    border-radius: 4px;
+    height: 6px;
+}
+
+QProgressBar::chunk {
+    background-color: {{ACCENT}};
+    border-radius: 4px;
+}
+
+QMenu {
+    background-color: #101726;
+    border: 1px solid {{ACCENT}};
+    border-radius: 8px;
+    padding: 6px;
+}
+
+QMenu::item {
+    padding: 7px 18px;
+    border-radius: 6px;
+}
+
+QMenu::item:selected {
+    background-color: {{ACCENT_SOFT}};
+}
+
+QToolTip {
+    background-color: #0C1220;
+    color: #E2F1FF;
+    border: 1px solid {{ACCENT}};
+    border-radius: 6px;
+    padding: 6px 8px;
+    font-size: 12px;
+}

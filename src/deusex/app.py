@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+import asyncio
 import concurrent.futures
+import contextlib
 import logging
 from pathlib import Path
+from typing import Final
 
 from deusex.brain.catalog import ModelCatalogService, ProviderPool
 from deusex.brain.cost_guard import CostGuard
@@ -19,6 +22,8 @@ from deusex.core.events import (
     AppStoppingEvent,
     EventBus,
     FastPathExecutedEvent,
+    MicMuteChangedEvent,
+    OrbStateChangedEvent,
     PrivacyModeChangedEvent,
     ProfileChangedEvent,
     ScheduledJobFiredEvent,
@@ -33,8 +38,20 @@ from deusex.core.scheduler import LocalScheduler
 from deusex.core.system_tools import EarconPlayer, GlobalHotkeyManager
 from deusex.modules.network.module import NetworkModule
 from deusex.modules.pc.module import PCModule
+from deusex.modules.voice.module import ProfileVoiceInfo, VoiceCommandReply, VoiceModule
+from deusex.modules.voice.stt import AudioInputDevice, transcribe_wav_cascade
 
 logger = logging.getLogger(__name__)
+
+_OPEN_WILDCARD_RULES: Final[frozenset[str]] = frozenset(
+    {
+        "pc_fp_open_app",
+        "pc_fp_close_app",
+        "pc_fp_close_productivity",
+        "pc_fp_run_routine",
+        "network.send_youtube",
+    }
+)
 
 
 class DeusExApplication:
@@ -100,9 +117,23 @@ class DeusExApplication:
         )
 
         # Registro de módulos enchufables disponibles (Zero-Base: se activan según settings.json)
-        self.register_module(PCModule())
+        self.pc_module = PCModule()
+        self.register_module(self.pc_module)
         self.network_module = NetworkModule()
         self.register_module(self.network_module)
+        self.voice_module = VoiceModule(
+            on_voice_command=self._handle_voice_command,
+            profile_info_provider=self._current_profile_voice_info,
+            on_set_voice_muted=self.set_voice_muted,
+            on_save_settings=lambda section: self.save_settings(section=section),
+            fast_path_matcher=self._has_fast_path_match,
+            audio_transcriber=self._transcribe_voice_wav,
+            vocabulary_provider=self.get_indexed_app_names,
+            on_resolve_safety=lambda cid, apprv, rsn: self.resolve_safety_confirmation(
+                cid, approved=apprv, reason=rsn
+            ),
+        )
+        self.register_module(self.voice_module)
 
         self._started = False
         self._unsubscribers: list[object] = []
@@ -214,6 +245,17 @@ class DeusExApplication:
         self.save_settings(section="voice")
         self.events.publish(VoiceMuteChangedEvent(muted=new_val))
 
+    def set_mic_muted(self, muted: bool) -> None:
+        new_val = bool(muted)
+        self.settings.voice.mic_muted = new_val
+        self.save_settings(section="voice")
+        self.events.publish(MicMuteChangedEvent(muted=new_val))
+
+    def toggle_mic_muted(self) -> bool:
+        target = not self.settings.voice.mic_muted
+        self.set_mic_muted(target)
+        return target
+
     def set_active_profile(self, profile_id: str, tone: str | None = None) -> None:
         prof = self.profiles.get(profile_id)
         self.settings.ui.active_profile_id = prof.id
@@ -287,4 +329,149 @@ class DeusExApplication:
         reason: str = "user",
     ) -> bool:
         return self.engine.safety_gate.resolve(confirmation_id, approved=approved, reason=reason)
+
+    def _current_profile_voice_info(self) -> ProfileVoiceInfo:
+        prof = self.profiles.get(self.settings.ui.active_profile_id)
+        return ProfileVoiceInfo(
+            profile_id=prof.id,
+            wake_words=prof.wake_words,
+            default_voice=prof.default_voice,
+            accent_hex=prof.accent_hex,
+        )
+
+    async def _handle_voice_command(
+        self,
+        transcript: str,
+        _is_follow_up: bool,
+    ) -> VoiceCommandReply | None:
+        turn: TurnResult = await self.orchestrator.handle_user_input(transcript)
+        reply_text = turn.reply_text.strip()
+        spoken_text = turn.spoken_text.strip() or None
+        if not reply_text and spoken_text is None:
+            return None
+        return VoiceCommandReply(
+            text=reply_text,
+            spoken_text=spoken_text,
+            should_speak=not self.settings.voice.tts_muted,
+        )
+
+    def trigger_orb_preview(self, *, duration_sec: float = 4.0) -> None:
+        """Dispara la vista previa fija de 4 s del Orbe (bloqueada en Modo Privacidad)."""
+        if self.settings.general.privacy_mode:
+            return
+        prof = self.profiles.get(self.settings.ui.active_profile_id)
+        self.events.publish(
+            OrbStateChangedEvent(
+                state="preview",
+                visible=True,
+                accent_hex=prof.accent_hex,
+                preview_sec=max(1.0, float(duration_sec)),
+            )
+        )
+
+    def list_microphones(self) -> list[AudioInputDevice]:
+        return self.voice_module.list_microphones()
+
+    def set_input_device(self, device_index: int | None) -> None:
+        self.settings.voice.input_device_index = device_index
+        self.save_settings(section="voice")
+        if self.voice_module.stt is not None:
+            self.voice_module.stt.request_device_change(device_index)
+
+    def start_voiceprint_calibration(self, *, duration_sec: float = 6.0) -> bool:
+        return self.voice_module.start_voiceprint_calibration(duration_sec=duration_sec)
+
+    def cancel_voiceprint_calibration(self) -> None:
+        self.voice_module.cancel_voiceprint_calibration()
+
+    def _has_fast_path_match(self, text: str) -> bool:
+        if self.engine is None or self.engine.fast_path is None:
+            return False
+        match_info = self.engine.fast_path.find_match(text)
+        if match_info is None:
+            return False
+
+        rule, match = match_info
+        if rule.rule_id not in _OPEN_WILDCARD_RULES:
+            return True
+
+        if rule.rule_id in ("pc_fp_open_app", "pc_fp_close_app", "pc_fp_close_productivity"):
+            app_query = (match.group(1) or "").strip() if match.lastindex and match.lastindex >= 1 else ""
+            if app_query and hasattr(self, "pc_module") and self.pc_module.apps is not None:
+                if not self.pc_module.apps.is_scanned:
+                    with contextlib.suppress(Exception):
+                        self.pc_module.apps.scan()
+                found = self.pc_module.apps.find_app(app_query)
+                if found is not None:
+                    return True
+        return False
+
+    async def _transcribe_with_gemini_audio(
+        self,
+        wav_bytes: bytes,
+        extra_vocabulary: tuple[str, ...] = (),
+    ) -> str | None:
+        try:
+            provider = self.pool.get_provider("gemini")
+            if not provider.is_configured():
+                return None
+            if self.pool.is_in_cooldown("gemini"):
+                return None
+
+            selection = self.catalog.select_models("gemini")
+            fast_model = selection.fast_model
+
+            from deusex.brain.providers import LLMMessage, LLMRequest, MediaAttachment
+
+            apps_hint = (
+                ", ".join(extra_vocabulary[:60])
+                if extra_vocabulary
+                else "YouTube, Spotify, Hearthstone, Visual Studio Code, Discord, Xbox, Chromecast"
+            )
+            prompt = (
+                "Transcribe de forma literal y exacta el comando de voz en español chileno grabado en este audio. "
+                f"Presta especial atención a nombres propios de aplicaciones y juegos en inglés como: {apps_hint}. "
+                "Devuelve ÚNICAMENTE el texto reconocido, sin explicaciones, sin comillas y sin puntuación extra."
+            )
+            req = LLMRequest(
+                messages=(
+                    LLMMessage(
+                        role="user",
+                        content=prompt,
+                        attachments=(MediaAttachment(mime_type="audio/wav", data=wav_bytes),),
+                    ),
+                ),
+                model=fast_model,
+                temperature=0.0,
+                max_output_tokens=128,
+            )
+            resp = await asyncio.wait_for(self.pool.generate("gemini", req), timeout=5.5)
+            text = resp.text.strip()
+            return text or None
+        except Exception as exc:
+            logger.debug("Error en Gemini Audio STT: %s", exc)
+            return None
+
+    def get_indexed_app_names(self) -> tuple[str, ...]:
+        if hasattr(self, "pc_module") and self.pc_module.apps is not None:
+            if not self.pc_module.apps.is_scanned:
+                with contextlib.suppress(Exception):
+                    self.pc_module.apps.scan()
+            return self.pc_module.apps.app_names
+        return ()
+
+    async def _transcribe_voice_wav(self, wav_bytes: bytes) -> tuple[str, str] | None:
+        wake_matcher = (
+            self.voice_module.stt.matcher
+            if (self.voice_module and self.voice_module.stt is not None)
+            else None
+        )
+        return await transcribe_wav_cascade(
+            wav_bytes,
+            secrets=self.secrets,
+            gemini_transcriber=self._transcribe_with_gemini_audio,
+            extra_vocabulary=self.get_indexed_app_names(),
+            fast_path_matcher=self._has_fast_path_match,
+            wake_matcher=wake_matcher,
+        )
 

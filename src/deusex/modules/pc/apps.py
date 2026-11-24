@@ -96,8 +96,11 @@ def phonetic_key(text: str) -> str:
         ("sh", "x"),
         ("ai", "y"),
         ("ay", "y"),
+        ("ea", "e"),
+        ("th", "t"),
         ("w", "gu"),
         ("v", "b"),
+        ("d", "t"),
         ("z", "s"),
         ("k", "c"),
         ("h", ""),
@@ -138,6 +141,15 @@ _KNOWN_ALIAS_HINTS: dict[str, tuple[str, ...]] = {
     "herramienta recortes": ("recortes", "snipping tool", "captura"),
     "vlc": ("vlc", "vlc media player"),
     "telegram": ("telegram", "tg"),
+    "hearthstone": (
+        "hearthstone",
+        "herston",
+        "heartstone",
+        "heardstone",
+        "herbston",
+        "jarston",
+        "hardstone",
+    ),
 }
 
 _DEFAULT_ROLE_SYNONYMS: dict[str, str] = {
@@ -278,6 +290,7 @@ _CLOSE_ALIAS_TO_PROCS: dict[str, tuple[str, ...]] = {
     "minecraft": ("javaw.exe", "minecraft.exe"),
     "overwatch": ("overwatch.exe",),
     "warframe": ("warframe.x64.exe",),
+    "hearthstone": ("hearthstone.exe",),
 }
 
 
@@ -686,6 +699,11 @@ class AppScanner:
         with self._lock:
             return self._scanned
 
+    @property
+    def app_names(self) -> tuple[str, ...]:
+        with self._lock:
+            return tuple(entry.name for entry in self._entries)
+
     def list_entries(self) -> list[AppEntry]:
         with self._lock:
             return list(self._entries)
@@ -852,7 +870,7 @@ class AppScanner:
                     if ratio > score:
                         score = ratio
 
-            if score >= 0.78:
+            if score >= 0.72:
                 adjusted = score + source_bonus.get(entry.source, 0.0)
                 if adjusted > best_score:
                     best_score = adjusted

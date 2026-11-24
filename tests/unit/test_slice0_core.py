@@ -359,7 +359,7 @@ def test_base_module_contract_lifecycle(
         runtime=runtime_services,
     )
     runtime_services.async_core.run_sync(module.start(ctx))
-    assert module.state == ModuleState.ACTIVE
+    assert module.state == ModuleState.ACTIVE  # type: ignore[comparison-overlap]
     assert len(module.get_tools()) == 1
     assert len(module.get_fast_path_rules()) == 1
     assert module.diagnose()[0].severity == DiagnosticSeverity.OK

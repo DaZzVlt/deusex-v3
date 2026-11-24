@@ -58,6 +58,142 @@ class ErrorOccurredEvent(DomainEvent):
     technical_detail: str = ""
 
 
+@dataclass(frozen=True, slots=True)
+class SafetyConfirmationRequestedEvent(DomainEvent):
+    confirmation_id: str = ""
+    tool_name: str = ""
+    module_id: str = ""
+    summary_es: str = ""
+    args_preview: str = ""
+    timeout_sec: int = 45
+
+
+@dataclass(frozen=True, slots=True)
+class SafetyConfirmationResolvedEvent(DomainEvent):
+    confirmation_id: str = ""
+    approved: bool = False
+    reason: str = ""
+
+
+@dataclass(frozen=True, slots=True)
+class ScheduledJobFiredEvent(DomainEvent):
+    job_id: str = ""
+    kind: str = "timer"
+    label: str = ""
+
+
+@dataclass(frozen=True, slots=True)
+class ScheduledJobsUpdatedEvent(DomainEvent):
+    pending_count: int = 0
+
+
+@dataclass(frozen=True, slots=True)
+class FastPathExecutedEvent(DomainEvent):
+    rule_id: str = ""
+    module_id: str = ""
+    summary: str = ""
+    elapsed_ms: float = 0.0
+    earcon: str | None = "confirm"
+
+
+@dataclass(frozen=True, slots=True)
+class ChatMessageEvent(DomainEvent):
+    conversation_id: str = ""
+    message_id: str = ""
+    role: str = "assistant"
+    content: str = ""
+    model_used: str = ""
+    fast_path: bool = False
+    sources: tuple[dict[str, str], ...] = ()
+
+
+@dataclass(frozen=True, slots=True)
+class MemorySavedEvent(DomainEvent):
+    memory_id: str = ""
+    category: str = "fact"
+    key: str = ""
+    value: str = ""
+    auto_extracted: bool = True
+
+
+@dataclass(frozen=True, slots=True)
+class CostUsageUpdatedEvent(DomainEvent):
+    fast_path_hits_today: int = 0
+    cloud_calls_today: int = 0
+    tokens_today: int = 0
+
+
+@dataclass(frozen=True, slots=True)
+class ProfileChangedEvent(DomainEvent):
+    profile_id: str = "raphael"
+    tone: str = "equilibrado"
+    accent_hex: str = "#38BDF8"
+
+
+@dataclass(frozen=True, slots=True)
+class VoiceMuteChangedEvent(DomainEvent):
+    muted: bool = False
+
+
+@dataclass(frozen=True, slots=True)
+class MicMuteChangedEvent(DomainEvent):
+    muted: bool = False
+
+
+@dataclass(frozen=True, slots=True)
+class InCallStateChangedEvent(DomainEvent):
+    active: bool = False
+    apps: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True, slots=True)
+class HotkeyTriggeredEvent(DomainEvent):
+    hotkey_id: str = ""
+    combo: str = ""
+
+
+@dataclass(frozen=True, slots=True)
+class OrbStateChangedEvent(DomainEvent):
+    state: str = "idle"  # idle | listening | thinking | speaking | privacy | calibrating | preview
+    visible: bool = False
+    accent_hex: str = ""
+    preview_sec: float = 0.0
+
+
+@dataclass(frozen=True, slots=True)
+class AudioLevelEvent(DomainEvent):
+    source: str = "mic"  # mic | tts
+    level: float = 0.0
+
+
+@dataclass(frozen=True, slots=True)
+class MicLevelEvent(DomainEvent):
+    level: float = 0.0
+    is_speech: bool = False
+    device_index: int | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class SubtitleUpdatedEvent(DomainEvent):
+    text: str = ""
+    word: str = ""
+    is_final: bool = False
+    clear: bool = False
+
+
+@dataclass(frozen=True, slots=True)
+class WakeWordDetectedEvent(DomainEvent):
+    wake_word: str = ""
+    triggered_by: str = "wake_word"  # wake_word | ptt | follow_up
+
+
+@dataclass(frozen=True, slots=True)
+class VoiceCalibrationEvent(DomainEvent):
+    status: str = "idle"  # started | progress | completed | failed | cancelled
+    progress: float = 0.0
+    message: str = ""
+
+
 E = TypeVar("E", bound=DomainEvent)
 
 

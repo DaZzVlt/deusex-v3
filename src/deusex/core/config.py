@@ -42,7 +42,15 @@ class UISettings(BaseModel):
     active_tone: str = "equilibrado"
     minichat_hotkey: str = "Alt+Space"
     privacy_hotkey: str = "Ctrl+Shift+P"
-    orb_style: Literal["reactor", "waves", "sphere", "bars", "avatar"] = "reactor"
+    orb_style: Literal[
+        "reactor",
+        "waves",
+        "sphere",
+        "bars",
+        "avatar",
+        "sacred_geometry",
+        "jarvis_core",
+    ] = "reactor"
     orb_visibility: Literal["speaking_only", "always_subtle"] = "speaking_only"
     orb_corner: Literal["bottom_right", "bottom_left", "top_right", "top_left"] = "bottom_right"
     orb_avatar_path: str = ""
@@ -67,6 +75,7 @@ class VoiceSettings(BaseModel):
     ptt_enabled: bool = True
     ptt_hotkey: str = "Ctrl+Alt+V"
     tts_muted: bool = False
+    mic_muted: bool = False
     tts_rate: float = Field(default=1.0, ge=0.5, le=2.0)
     voice_by_profile: dict[str, str] = Field(default_factory=dict)
     follow_up_window_sec: float = Field(default=6.0, ge=0.0, le=30.0)

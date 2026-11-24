@@ -266,6 +266,23 @@ class FastPathEngine:
         with self._lock:
             return list(self._rules)
 
+    def find_match(self, raw_text: str) -> tuple[FastPathRule, re.Match[str]] | None:
+        """Encuentra la primera regla Fast-Path que coincide con el texto normalizado y su Match."""
+        normalized = normalize_command_text(raw_text)
+        if not normalized:
+            return None
+        with self._lock:
+            snapshot = list(self._rules)
+        for rule in snapshot:
+            match = rule.pattern.search(normalized)
+            if match is not None:
+                return rule, match
+        return None
+
+    def has_match(self, raw_text: str) -> bool:
+        """Determina de forma síncrona si el texto coincide con alguna regla Fast-Path registrada."""
+        return self.find_match(raw_text) is not None
+
     async def try_execute(self, raw_text: str) -> ToolResult | None:
         normalized = normalize_command_text(raw_text)
         if not normalized:

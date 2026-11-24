@@ -71,6 +71,11 @@ class SystemTrayController(QObject):
         self._mute_action.triggered.connect(lambda checked: self._app.set_voice_muted(checked))
         self._menu.addAction(self._mute_action)
 
+        self._mic_mute_action = QAction("Silenciar micrófono", self._menu)
+        self._mic_mute_action.setCheckable(True)
+        self._mic_mute_action.triggered.connect(lambda checked: self._app.set_mic_muted(checked))
+        self._menu.addAction(self._mic_mute_action)
+
         self._menu.addSeparator()
 
         self._exit_action = QAction("Salir de DeusEx", self._menu)
@@ -82,6 +87,7 @@ class SystemTrayController(QObject):
 
         self._bridge.privacy_mode_changed.connect(lambda _e: self.sync_state())
         self._bridge.voice_mute_changed.connect(lambda _m: self.sync_state())
+        self._bridge.mic_mute_changed.connect(lambda _m: self.sync_state())
         self._bridge.profile_changed.connect(lambda _p: self.refresh_icon())
         self._bridge.scheduled_job_fired.connect(self._on_scheduled_job_fired)
         self.sync_state()
@@ -104,6 +110,7 @@ class SystemTrayController(QObject):
     def sync_state(self) -> None:
         self._privacy_action.setChecked(self._app.settings.general.privacy_mode)
         self._mute_action.setChecked(self._app.settings.voice.tts_muted)
+        self._mic_mute_action.setChecked(self._app.settings.voice.mic_muted)
 
     def _on_activated(self, reason: QSystemTrayIcon.ActivationReason) -> None:
         if reason in (

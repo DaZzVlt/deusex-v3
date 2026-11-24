@@ -23,6 +23,7 @@ dependencies = [
     "vosk>=0.3.45",
     "sounddevice>=0.5.1",
     "edge-tts>=7.0.0",
+    "SpeechRecognition>=3.14.0",
 
     # Windows 11 nativo (COM, pycaw, UIA, SMTC)
     "pycaw>=20240210; sys_platform == 'win32'",
@@ -80,6 +81,7 @@ packages = ["src/deusex"]
 testpaths = ["tests"]
 addopts = "-ra --strict-markers"
 asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
 qt_api = "pyside6"
 markers = [
     "live: smoke tests reales contra Windows 11, APIs externas o LAN (opt-in con -m live)",
