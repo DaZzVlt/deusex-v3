@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import concurrent.futures
 from typing import Literal, cast
 
 from PySide6.QtCore import Signal
@@ -18,6 +19,7 @@ from PySide6.QtWidgets import (
 
 from deusex.app import DeusExApplication
 from deusex.brain.providers import PROVIDER_METADATA, detect_api_key_from_text
+from deusex.modules.workspace import GoogleAuthSessionInfo
 from deusex.ui.components import FluentCard, SettingRow
 
 
@@ -25,6 +27,8 @@ class OnboardingDialog(QDialog):
     """Asistente inicial de 4 pasos para nuevos usuarios (con botón 'Saltar todo' en el paso 1)."""
 
     theme_preview_requested = Signal()
+    _oauth_finished = Signal(bool, str)
+    _setup_sync_finished = Signal(bool, str)
 
     def __init__(
         self,
@@ -34,6 +38,8 @@ class OnboardingDialog(QDialog):
         super().__init__(parent)
         self._app = app
         self._step = 0
+        self._closing = False
+        self._google_busy = False
         self._detected_clip: tuple[str, str, str] | None = None
 
         self.setObjectName("OnboardingRoot")
@@ -41,8 +47,12 @@ class OnboardingDialog(QDialog):
         self.resize(620, 440)
         self.setModal(True)
 
+        self._oauth_finished.connect(self._on_oauth_finished)
+        self._setup_sync_finished.connect(self._on_setup_sync_finished)
+
         self._build_ui()
         self._update_step_ui()
+        self._refresh_oauth_status()
         self.check_clipboard_for_key()
 
     def _build_ui(self) -> None:
@@ -167,6 +177,19 @@ class OnboardingDialog(QDialog):
         key_row.addWidget(detect_btn)
         card.body_layout.addLayout(key_row)
 
+        sync_row = QHBoxLayout()
+        self.setup_sync_btn = QPushButton("Abrir guía y Setup Sync (127.0.0.1)", card)
+        self.setup_sync_btn.setObjectName("OnboardingSetupSyncBtn")
+        self.setup_sync_btn.clicked.connect(self._on_setup_sync_clicked)
+        sync_row.addWidget(self.setup_sync_btn)
+        sync_row.addStretch(1)
+        card.body_layout.addLayout(sync_row)
+
+        self.sync_status_lbl = QLabel("", card)
+        self.sync_status_lbl.setObjectName("ViewSubtitle")
+        self.sync_status_lbl.setWordWrap(True)
+        card.body_layout.addWidget(self.sync_status_lbl)
+
         layout.addWidget(card)
         layout.addStretch(1)
         return page
@@ -193,6 +216,30 @@ class OnboardingDialog(QDialog):
         )
         info.setWordWrap(True)
         card.body_layout.addWidget(info)
+
+        oauth_row = QHBoxLayout()
+        self.google_status_lbl = QLabel("Google: Desconectado", card)
+        self.google_status_lbl.setObjectName("OnboardingGoogleStatus")
+        oauth_row.addWidget(self.google_status_lbl)
+        oauth_row.addStretch(1)
+
+        self.portal_btn = QPushButton("Abrir Portal Web", card)
+        self.portal_btn.setObjectName("OnboardingPortalBtn")
+        self.portal_btn.clicked.connect(self._on_open_portal_clicked)
+        oauth_row.addWidget(self.portal_btn)
+
+        self.google_oauth_btn = QPushButton("Iniciar sesión con Google", card)
+        self.google_oauth_btn.setObjectName("OnboardingGoogleBtn")
+        self.google_oauth_btn.setProperty("variant", "primary")
+        self.google_oauth_btn.clicked.connect(self._on_google_oauth_clicked)
+        oauth_row.addWidget(self.google_oauth_btn)
+        card.body_layout.addLayout(oauth_row)
+
+        self.oauth_feedback_lbl = QLabel("", card)
+        self.oauth_feedback_lbl.setObjectName("ViewSubtitle")
+        self.oauth_feedback_lbl.setWordWrap(True)
+        card.body_layout.addWidget(self.oauth_feedback_lbl)
+
         layout.addWidget(card)
         layout.addStretch(1)
         return page
@@ -267,6 +314,8 @@ class OnboardingDialog(QDialog):
             self._update_step_ui()
             if self._step == 1:
                 self.check_clipboard_for_key()
+            elif self._step == 2:
+                self._refresh_oauth_status()
             return
         self.finish_onboarding()
 
@@ -284,3 +333,88 @@ class OnboardingDialog(QDialog):
         self._app.settings.general.onboarding_completed = True
         self._app.save_settings(section="all")
         self.accept()
+
+    def _refresh_oauth_status(self) -> None:
+        info = self._app.get_google_auth_status()
+        if info.connected:
+            label = f"Google: Conectado ({info.email})" if info.email else "Google: Conectado"
+            self.google_status_lbl.setText(label)
+            self.google_oauth_btn.setText("Reconectar Google")
+        elif info.client_configured:
+            self.google_status_lbl.setText("Google: Desconectado")
+            self.google_oauth_btn.setText("Iniciar sesión con Google")
+        else:
+            self.google_status_lbl.setText("Google: Sin Client ID")
+            self.google_oauth_btn.setText("Iniciar sesión con Google")
+        self.google_oauth_btn.setEnabled(not self._google_busy)
+
+    def _on_setup_sync_clicked(self) -> None:
+        if self._closing:
+            return
+        self.setup_sync_btn.setEnabled(False)
+        self.sync_status_lbl.setText("Abriendo guías y activando Setup Sync en 127.0.0.1...")
+
+        def _done_cb(fut: concurrent.futures.Future[str]) -> None:
+            if self._closing:
+                return
+            try:
+                fut.result()
+                port = self._app.oauth_server.port
+                self._setup_sync_finished.emit(
+                    True,
+                    f"Setup Sync listo en 127.0.0.1:{port}. Envía tu clave desde el navegador.",
+                )
+            except Exception as exc:
+                self._setup_sync_finished.emit(False, str(exc))
+
+        try:
+            fut = self._app.open_setup_sync_portal(page="guides.html")
+            fut.add_done_callback(_done_cb)
+        except RuntimeError as exc:
+            self._setup_sync_finished.emit(False, str(exc))
+
+    def _on_setup_sync_finished(self, _ok: bool, message: str) -> None:
+        self.setup_sync_btn.setEnabled(True)
+        self.sync_status_lbl.setText(message)
+
+    def _on_open_portal_clicked(self) -> None:
+        url = self._app.open_web_portal(page="index.html")
+        self.oauth_feedback_lbl.setText(f"Portal abierto en el navegador: {url}")
+
+    def _on_google_oauth_clicked(self) -> None:
+        if self._google_busy or self._closing:
+            return
+        if not self._app.google_auth.is_client_configured():
+            self.oauth_feedback_lbl.setText(
+                "Configura GOOGLE_OAUTH_CLIENT_ID en Setup Sync o .env para conectar Google."
+            )
+            return
+        self._google_busy = True
+        self.google_oauth_btn.setEnabled(False)
+        self.google_oauth_btn.setText("Esperando navegador...")
+        self.oauth_feedback_lbl.setText("Abriendo navegador para iniciar sesión con Google...")
+
+        def _done_cb(fut: concurrent.futures.Future[GoogleAuthSessionInfo]) -> None:
+            if self._closing:
+                return
+            try:
+                info = fut.result()
+                account = info.email or info.name or "Google"
+                self._oauth_finished.emit(True, f"Cuenta conectada: {account}.")
+            except Exception as exc:
+                self._oauth_finished.emit(False, str(exc))
+
+        try:
+            fut = self._app.start_google_oauth_flow()
+            fut.add_done_callback(_done_cb)
+        except RuntimeError as exc:
+            self._oauth_finished.emit(False, str(exc))
+
+    def _on_oauth_finished(self, _ok: bool, message: str) -> None:
+        self._google_busy = False
+        self.oauth_feedback_lbl.setText(message)
+        self._refresh_oauth_status()
+
+    def done(self, r: int) -> None:
+        self._closing = True
+        super().done(r)

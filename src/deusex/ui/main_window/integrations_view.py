@@ -26,6 +26,7 @@ from PySide6.QtWidgets import (
 from deusex.app import DeusExApplication
 from deusex.core.contracts import ModuleState, ToolResult
 from deusex.modules.network import DeviceAliasStore, DeviceType, NetworkDeviceRecord
+from deusex.modules.workspace import GoogleAuthSessionInfo
 from deusex.ui.bridge_qt import QtEventBridge
 from deusex.ui.components import FluentCard
 
@@ -58,7 +59,7 @@ _INTEGRATIONS: tuple[_IntegrationCardSpec, ...] = (
         title="Google Workspace y YouTube Music",
         subtitle="Gmail, Calendar, Tasks, Drive, Google Docs y playlists de YouTube Music mediante OAuth 2.0 PKCE en 1 clic.",
         action_label="Iniciar sesión con Google",
-        slice_note="Se activa en Rebanadas 6-7 (Portal GitHub Pages + OAuth 1-clic).",
+        slice_note="OAuth 2.0 PKCE 1-clic activo (127.0.0.1:8888). Módulos Workspace en Rebanada 7.",
     ),
     _IntegrationCardSpec(
         key="spotify",
@@ -104,6 +105,8 @@ class IntegrationsView(QWidget):
     _lan_scan_completed = Signal(object, str)
     _lan_action_completed = Signal(bool, str)
     _module_toggle_completed = Signal(bool, str)
+    _oauth_action_completed = Signal(bool, str)
+    _setup_sync_opened = Signal(bool, str)
 
     def __init__(
         self,
@@ -116,6 +119,7 @@ class IntegrationsView(QWidget):
         self._bridge = bridge
         self._closing = False
         self._scanning = False
+        self._google_busy = False
         self._populating_lan_table = False
         self._lan_devices: list[NetworkDeviceRecord] = []
         self._status_pills: dict[str, QLabel] = {}
@@ -123,9 +127,14 @@ class IntegrationsView(QWidget):
         self._lan_scan_completed.connect(self._on_lan_scan_completed)
         self._lan_action_completed.connect(self._on_lan_action_completed)
         self._module_toggle_completed.connect(self._on_module_toggle_completed)
+        self._oauth_action_completed.connect(self._on_oauth_action_completed)
+        self._setup_sync_opened.connect(self._on_setup_sync_opened)
 
         self._bridge.module_state_changed.connect(self._on_module_state_changed)
         self._bridge.settings_updated.connect(self._on_settings_updated)
+        self._bridge.oauth_completed.connect(self._on_oauth_completed_event)
+        self._bridge.oauth_error.connect(self._on_oauth_error_event)
+        self._bridge.setup_sync_received.connect(self._on_setup_sync_received_event)
 
         self._build_ui()
         self.refresh()
@@ -156,11 +165,15 @@ class IntegrationsView(QWidget):
         grid.setContentsMargins(0, 4, 6, 8)
         grid.setSpacing(12)
 
-        # Panel LAN principal ocupando las 2 columnas en fila 0
-        lan_card = self._build_lan_card(host)
-        grid.addWidget(lan_card, 0, 0, 1, 2)
+        # Panel Setup Sync y Portal Web ocupando las 2 columnas en fila 0
+        setup_card = self._build_setup_sync_card(host)
+        grid.addWidget(setup_card, 0, 0, 1, 2)
 
-        # Tarjetas de integraciones a partir de fila 1
+        # Panel LAN principal ocupando las 2 columnas en fila 1
+        lan_card = self._build_lan_card(host)
+        grid.addWidget(lan_card, 1, 0, 1, 2)
+
+        # Tarjetas de integraciones a partir de fila 2
         for idx, spec in enumerate(_INTEGRATIONS):
             card = FluentCard(title=spec.title, subtitle=spec.subtitle, parent=host)
 
@@ -175,18 +188,82 @@ class IntegrationsView(QWidget):
 
             footer.addStretch(1)
 
-            btn = QPushButton(spec.action_label, card)
-            btn.setProperty("variant", "primary")
-            btn.setEnabled(False)
-            btn.setToolTip(spec.slice_note)
-            footer.addWidget(btn)
+            if spec.key == "google":
+                self._google_disconnect_btn = QPushButton("Desconectar", card)
+                self._google_disconnect_btn.setObjectName("GoogleDisconnectButton")
+                self._google_disconnect_btn.setVisible(False)
+                self._google_disconnect_btn.clicked.connect(self._on_google_disconnect_clicked)
+                footer.addWidget(self._google_disconnect_btn)
 
-            card.body_layout.addLayout(footer)
-            grid.addWidget(card, 1 + (idx // 2), idx % 2)
+                self._google_connect_btn = QPushButton(spec.action_label, card)
+                self._google_connect_btn.setObjectName("GoogleOAuthButton")
+                self._google_connect_btn.setProperty("variant", "primary")
+                self._google_connect_btn.setToolTip(spec.slice_note)
+                self._google_connect_btn.clicked.connect(self._on_google_oauth_clicked)
+                footer.addWidget(self._google_connect_btn)
 
-        grid.setRowStretch(1 + (len(_INTEGRATIONS) + 1) // 2, 1)
+                card.body_layout.addLayout(footer)
+
+                self._google_feedback = QLabel("", card)
+                self._google_feedback.setObjectName("GoogleFeedbackLabel")
+                self._google_feedback.setProperty("class", "ViewSubtitle")
+                self._google_feedback.setWordWrap(True)
+                card.body_layout.addWidget(self._google_feedback)
+            else:
+                btn = QPushButton(spec.action_label, card)
+                btn.setProperty("variant", "primary")
+                btn.setEnabled(False)
+                btn.setToolTip(spec.slice_note)
+                footer.addWidget(btn)
+                card.body_layout.addLayout(footer)
+
+            grid.addWidget(card, 2 + (idx // 2), idx % 2)
+
+        grid.setRowStretch(2 + (len(_INTEGRATIONS) + 1) // 2, 1)
         scroll.setWidget(host)
         root.addWidget(scroll, 1)
+
+    def _build_setup_sync_card(self, host: QWidget) -> FluentCard:
+        card = FluentCard(
+            title="Portal Web y Setup Sync Local (127.0.0.1)",
+            subtitle=(
+                "Abre las guías oficiales en GitHub Pages y envía claves API directo a tu DeusEx "
+                "local mediante token efímero (sin editar .env manualmente)."
+            ),
+            parent=host,
+        )
+
+        row = QHBoxLayout()
+        row.setContentsMargins(0, 4, 0, 2)
+        row.setSpacing(8)
+
+        pill = QLabel("Servidor local listo bajo demanda", card)
+        pill.setObjectName("SetupSyncStatusPill")
+        self._status_pills["setup_sync"] = pill
+        row.addWidget(pill)
+
+        row.addStretch(1)
+
+        self._open_portal_btn = QPushButton("Abrir Portal Web", card)
+        self._open_portal_btn.setObjectName("OpenPortalButton")
+        self._open_portal_btn.clicked.connect(self._on_open_portal_clicked)
+        row.addWidget(self._open_portal_btn)
+
+        self._setup_sync_btn = QPushButton("Abrir Setup Sync", card)
+        self._setup_sync_btn.setObjectName("SetupSyncButton")
+        self._setup_sync_btn.setProperty("variant", "primary")
+        self._setup_sync_btn.clicked.connect(self._on_open_setup_sync_clicked)
+        row.addWidget(self._setup_sync_btn)
+
+        card.body_layout.addLayout(row)
+
+        self._sync_feedback = QLabel("", card)
+        self._sync_feedback.setObjectName("SetupSyncFeedbackLabel")
+        self._sync_feedback.setProperty("class", "ViewSubtitle")
+        self._sync_feedback.setWordWrap(True)
+        card.body_layout.addWidget(self._sync_feedback)
+
+        return card
 
     def _build_lan_card(self, host: QWidget) -> FluentCard:
         card = FluentCard(
@@ -341,6 +418,7 @@ class IntegrationsView(QWidget):
             wa_pill.style().unpolish(wa_pill)
             wa_pill.style().polish(wa_pill)
 
+        self.refresh_oauth_section()
         self.refresh_lan_section()
 
     def refresh_lan_section(self) -> None:
@@ -551,7 +629,156 @@ class IntegrationsView(QWidget):
             self.refresh_lan_section()
 
     def _on_settings_updated(self, _event: Any) -> None:
+        self.refresh_oauth_section()
         self.refresh_lan_section()
+
+    def refresh_oauth_section(self) -> None:
+        session = self._app.get_google_auth_status()
+        google_pill = self._status_pills.get("google")
+        if google_pill is not None:
+            if session.connected:
+                label = f"Conectado ({session.email})" if session.email else "Conectado"
+                google_pill.setText(label)
+                google_pill.setProperty("state", "active")
+            elif session.client_configured:
+                google_pill.setText("Desconectado")
+                google_pill.setProperty("state", "inactive")
+            else:
+                google_pill.setText("Falta GOOGLE_OAUTH_CLIENT_ID")
+                google_pill.setProperty("state", "warning")
+            google_pill.style().unpolish(google_pill)
+            google_pill.style().polish(google_pill)
+
+        self._google_connect_btn.setEnabled(not self._google_busy)
+        self._google_connect_btn.setText(
+            "Esperando navegador..."
+            if self._google_busy
+            else ("Reconectar Google" if session.connected else "Iniciar sesión con Google")
+        )
+        self._google_disconnect_btn.setVisible(session.connected)
+        self._google_disconnect_btn.setEnabled(session.connected and not self._google_busy)
+
+        sync_pill = self._status_pills.get("setup_sync")
+        if sync_pill is not None:
+            srv = self._app.oauth_server
+            if srv.is_running:
+                sync_pill.setText(f"Escuchando en 127.0.0.1:{srv.port}")
+                sync_pill.setProperty("state", "active")
+            else:
+                port = self._app.settings.developer.oauth_callback_port
+                sync_pill.setText(f"Listo bajo demanda (:{port})")
+                sync_pill.setProperty("state", "inactive")
+            sync_pill.style().unpolish(sync_pill)
+            sync_pill.style().polish(sync_pill)
+
+    def _on_google_oauth_clicked(self) -> None:
+        if self._google_busy or self._closing:
+            return
+        if not self._app.google_auth.is_client_configured():
+            self._google_feedback.setText(
+                "Configura GOOGLE_OAUTH_CLIENT_ID mediante Setup Sync o .env antes de iniciar sesión."
+            )
+            return
+
+        self._google_busy = True
+        self._google_feedback.setText("Abriendo navegador para iniciar sesión con Google (PKCE)...")
+        self.refresh_oauth_section()
+
+        def _done_cb(fut: concurrent.futures.Future[GoogleAuthSessionInfo]) -> None:
+            if self._closing:
+                return
+            try:
+                info = fut.result()
+                label = info.email or info.name or "Google"
+                self._oauth_action_completed.emit(True, f"Cuenta conectada: {label}.")
+            except Exception as exc:
+                self._oauth_action_completed.emit(False, str(exc))
+
+        try:
+            fut = self._app.start_google_oauth_flow()
+            fut.add_done_callback(_done_cb)
+        except RuntimeError as exc:
+            self._oauth_action_completed.emit(False, str(exc))
+
+    def _on_google_disconnect_clicked(self) -> None:
+        if self._google_busy or self._closing:
+            return
+        self._google_busy = True
+        self._google_feedback.setText("Desconectando cuenta de Google...")
+        self.refresh_oauth_section()
+
+        def _done_cb(fut: concurrent.futures.Future[bool]) -> None:
+            if self._closing:
+                return
+            try:
+                fut.result()
+                self._oauth_action_completed.emit(True, "Cuenta de Google desconectada.")
+            except Exception as exc:
+                self._oauth_action_completed.emit(False, str(exc))
+
+        try:
+            fut = self._app.disconnect_google_account(revoke_remote=False)
+            fut.add_done_callback(_done_cb)
+        except RuntimeError as exc:
+            self._oauth_action_completed.emit(False, str(exc))
+
+    def _on_oauth_action_completed(self, _ok: bool, message: str) -> None:
+        self._google_busy = False
+        self._google_feedback.setText(message)
+        self.refresh_oauth_section()
+
+    def _on_open_portal_clicked(self) -> None:
+        url = self._app.open_web_portal(page="index.html")
+        self._sync_feedback.setText(f"Portal abierto en el navegador: {url}")
+
+    def _on_open_setup_sync_clicked(self) -> None:
+        if self._closing:
+            return
+        self._setup_sync_btn.setEnabled(False)
+        self._sync_feedback.setText("Iniciando servidor local 127.0.0.1 y abriendo Setup Sync...")
+
+        def _done_cb(fut: concurrent.futures.Future[str]) -> None:
+            if self._closing:
+                return
+            try:
+                fut.result()
+                port = self._app.oauth_server.port
+                self._setup_sync_opened.emit(
+                    True,
+                    f"Setup Sync activo en 127.0.0.1:{port}. Envía tus claves desde la pestaña abierta.",
+                )
+            except Exception as exc:
+                self._setup_sync_opened.emit(False, str(exc))
+
+        try:
+            fut = self._app.open_setup_sync_portal(page="guides.html")
+            fut.add_done_callback(_done_cb)
+        except RuntimeError as exc:
+            self._setup_sync_opened.emit(False, str(exc))
+
+    def _on_setup_sync_opened(self, _ok: bool, message: str) -> None:
+        self._setup_sync_btn.setEnabled(True)
+        self._sync_feedback.setText(message)
+        self.refresh_oauth_section()
+
+    def _on_oauth_completed_event(self, event: Any) -> None:
+        if getattr(event, "provider", "") == "google":
+            msg = str(getattr(event, "message", "") or "")
+            if msg:
+                self._google_feedback.setText(msg)
+            self.refresh_oauth_section()
+
+    def _on_oauth_error_event(self, event: Any) -> None:
+        if getattr(event, "provider", "") == "google":
+            msg = str(getattr(event, "message", "") or "")
+            if msg:
+                self._google_feedback.setText(msg)
+            self.refresh_oauth_section()
+
+    def _on_setup_sync_received_event(self, event: Any) -> None:
+        msg = str(getattr(event, "message", "") or "Setup Sync recibido.")
+        self._sync_feedback.setText(msg)
+        self.refresh_oauth_section()
 
     def _on_power_on_clicked(self) -> None:
         dev = self._get_selected_device()
@@ -604,4 +831,10 @@ class IntegrationsView(QWidget):
             self._bridge.module_state_changed.disconnect(self._on_module_state_changed)
         with contextlib.suppress(RuntimeError, TypeError):
             self._bridge.settings_updated.disconnect(self._on_settings_updated)
+        with contextlib.suppress(RuntimeError, TypeError):
+            self._bridge.oauth_completed.disconnect(self._on_oauth_completed_event)
+        with contextlib.suppress(RuntimeError, TypeError):
+            self._bridge.oauth_error.disconnect(self._on_oauth_error_event)
+        with contextlib.suppress(RuntimeError, TypeError):
+            self._bridge.setup_sync_received.disconnect(self._on_setup_sync_received_event)
         super().closeEvent(event)

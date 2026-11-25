@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Términos de Servicio y Atribuciones — DeusEx v3</title>
+  <meta
+    name="description"
+    content="Términos de servicio de DeusEx v3, responsabilidades de uso local-first y atribución obligatoria de datos meteorológicos Open-Meteo CC BY 4.0."
+  />
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="container nav-bar">
+      <a class="brand" href="./index.html">
+        <span class="brand-mark" aria-hidden="true">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+            <circle cx="12" cy="12" r="8" stroke="#38BDF8" stroke-width="2" />
+            <circle cx="12" cy="12" r="3" fill="#38BDF8" />
+          </svg>
+        </span>
+        <span>DeusEx</span>
+        <span class="brand-tag">Términos</span>
+      </a>
+
+      <button
+        type="button"
+        class="nav-toggle"
+        data-nav-toggle
+        aria-expanded="false"
+        aria-label="Abrir navegación"
+      >
+        Menú
+      </button>
+
+      <nav class="nav-links" data-nav-links aria-label="Navegación principal">
+        <a href="./index.html">Inicio</a>
+        <a href="./guides.html">Guías y Setup Sync</a>
+        <a href="./privacy.html">Privacidad</a>
+        <a href="./terms.html" class="active">Términos</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="section">
+    <div class="container">
+      <article class="card legal-article">
+        <span class="pill" data-state="info">Condiciones de uso y licencias de terceros</span>
+        <h1>Términos de Servicio y Atribuciones</h1>
+        <p>
+          <strong>Última actualización:</strong> noviembre de 2026 · <strong>Software:</strong> DeusEx v3 para Windows 11
+        </p>
+
+        <h2>1. Naturaleza del Software</h2>
+        <p>
+          DeusEx v3 es una aplicación de escritorio local-first diseñada para asistir en la automatización
+          personal, gestión de productividad, control del PC y conexión voluntaria con servicios externos.
+          Al instalar o utilizar DeusEx v3 o este portal web, aceptas estos términos de uso.
+        </p>
+
+        <h2>2. Responsabilidad del Usuario y Control SafetyGate</h2>
+        <ul>
+          <li>
+            <strong>Acciones locales y en nube:</strong> eres responsable de revisar y confirmar las acciones
+            ejecutadas por el asistente, especialmente aquellas protegidas por el mecanismo de confirmación
+            física <span class="code-inline">SafetyGate</span> (borrado de archivos, cierre de editores,
+            envío de correos o mensajes y acciones de energía del sistema).
+          </li>
+          <li>
+            <strong>Custodia de credenciales:</strong> las claves API y tokens OAuth que ingreses se guardan
+            exclusivamente en tu dispositivo. Eres responsable de resguardar el acceso a tu cuenta de Windows
+            y no compartir tus archivos <span class="code-inline">.env</span> ni <span class="code-inline">secrets/</span>.
+          </li>
+          <li>
+            <strong>Respeto a servicios de terceros:</strong> el uso de Google Workspace, Gemini, Spotify,
+            TIDAL, Discord, WhatsApp u otros proveedores integrados queda sujeto adicionalmente a los términos
+            de servicio y cuotas de cada proveedor.
+          </li>
+        </ul>
+
+        <h2>3. Atribución Obligatoria de Datos Meteorológicos (Open-Meteo CC BY 4.0)</h2>
+        <div class="callout" data-type="ok" style="margin: 0.9rem 0;">
+          <p style="margin: 0 0 0.5rem; color: var(--text-primary);">
+            <strong>Weather data by Open-Meteo.com (CC BY 4.0):</strong>
+            Los pronósticos y condiciones meteorológicas consultados por el módulo de Inteligencia Web de
+            DeusEx v3 provienen del nivel gratuito de
+            <a href="https://open-meteo.com/" target="_blank" rel="noopener noreferrer">Open-Meteo.com</a>,
+            distribuidos bajo la licencia
+            <a
+              href="https://creativecommons.org/licenses/by/4.0/"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Creative Commons Attribution 4.0 International (CC BY 4.0)
+            </a>.
+          </p>
+          <p style="margin: 0;">
+            DeusEx v3 almacena en caché local las respuestas meteorológicas durante 15 minutos para respetar
+            el uso justo del servicio gratuito y reducir tráfico innecesario.
+          </p>
+        </div>
+
+        <h2>4. Disponibilidad y Exención de Garantías</h2>
+        <p>
+          DeusEx v3 y este portal web estático se proporcionan <em>«tal cual»</em> (<em>as-is</em>), sin
+          garantías expresas ni implícitas de disponibilidad continua de APIs de terceros (como proveedores
+          de modelos de IA, servicios de streaming, correo o mensajería). Las respuestas generadas por modelos
+          de inteligencia artificial pueden contener imprecisiones y no constituyen asesoría médica, legal ni
+          financiera.
+        </p>
+
+        <h2>5. Código Abierto y Componentes Pre-Empaquetados</h2>
+        <p>
+          DeusEx v3 integra bibliotecas y runtimes de terceros (incluidos PySide6, Vosk, FFmpeg y bibliotecas
+          Python/Node.js) sujetos a sus respectivas licencias originales. Los archivos de privacidad y límites
+          de uso de datos de Google se encuentran detallados en nuestra
+          <a href="./privacy.html">Política de Privacidad</a>.
+        </p>
+      </article>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-row">
+      <div>DeusEx v3 · Weather data by <a href="https://open-meteo.com/" target="_blank" rel="noopener noreferrer">Open-Meteo.com</a> (CC BY 4.0).</div>
+      <div class="footer-links">
+        <a href="./index.html">Inicio</a>
+        <a href="./guides.html">Guías</a>
+        <a href="./privacy.html">Privacidad</a>
+      </div>
+    </div>
+  </footer>
+
+  <script src="./app.js" defer></script>
+</body>
+</html>

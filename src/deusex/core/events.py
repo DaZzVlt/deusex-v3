@@ -194,6 +194,78 @@ class VoiceCalibrationEvent(DomainEvent):
     message: str = ""
 
 
+@dataclass(frozen=True, slots=True)
+class ResearchExportRequestedEvent(DomainEvent):
+    """Contrato de exportación de investigación hacia Google Docs (Rebanada 7)."""
+
+    export_id: str = ""
+    title: str = ""
+    markdown_body: str = ""
+    sources: tuple[dict[str, str], ...] = ()
+    target: str = "google_docs"
+
+
+@dataclass(frozen=True, slots=True)
+class ScreenCapturedEvent(DomainEvent):
+    capture_id: str = ""
+    monitor_index: int = 0
+    width: int = 0
+    height: int = 0
+    mime_type: str = "image/jpeg"
+    size_bytes: int = 0
+    source: str = "manual"  # manual | live_guide | tool
+
+
+@dataclass(frozen=True, slots=True)
+class LiveGuideStateChangedEvent(DomainEvent):
+    state: str = "off"  # off | active | paused
+    session_id: str = ""
+    monitor_index: int = 0
+    turns_count: int = 0
+    captures_count: int = 0
+
+
+@dataclass(frozen=True, slots=True)
+class VisionShareRequestedEvent(DomainEvent):
+    """Contrato de envío de captura hacia Discord, WhatsApp o APK móvil (Rebanadas 8-10)."""
+
+    share_id: str = ""
+    target: str = ""  # discord | whatsapp | mobile
+    recipient: str = ""
+    caption: str = ""
+    mime_type: str = "image/jpeg"
+    image_bytes: bytes = b""
+    filename: str = "capture.jpg"
+
+
+@dataclass(frozen=True, slots=True)
+class OAuthCompletedEvent(DomainEvent):
+    """Notifica vinculación o desconexión OAuth (sin exponer tokens ni secretos)."""
+
+    provider: str = ""
+    connected: bool = False
+    account_email: str = ""
+    account_name: str = ""
+    message: str = ""
+
+
+@dataclass(frozen=True, slots=True)
+class OAuthErrorEvent(DomainEvent):
+    provider: str = ""
+    error_code: str = ""
+    message: str = ""
+
+
+@dataclass(frozen=True, slots=True)
+class SetupSyncReceivedEvent(DomainEvent):
+    """Notifica recepción local de Setup Sync (solo nombres de claves, nunca valores)."""
+
+    saved_secrets: tuple[str, ...] = ()
+    updated_settings: tuple[str, ...] = ()
+    source_origin: str = ""
+    message: str = ""
+
+
 E = TypeVar("E", bound=DomainEvent)
 
 

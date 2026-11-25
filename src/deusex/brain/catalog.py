@@ -17,6 +17,7 @@ from deusex.brain.providers import (
     ProviderError,
     create_default_providers,
     is_usable_chat_model,
+    is_vision_model_id,
 )
 from deusex.core.config import SecretsManager
 from deusex.core.db import Database
@@ -155,6 +156,8 @@ class ModelAutoSelector:
         provider_id: str,
         models: list[ModelInfo],
         excluded_models: set[str] | frozenset[str] = frozenset(),
+        *,
+        require_vision: bool = False,
     ) -> ModelSelection:
         clean_id = provider_id.strip().lower()
         usable = [
@@ -163,11 +166,24 @@ class ModelAutoSelector:
             and is_usable_chat_model(m.id)
             and m.id not in excluded_models
         ]
+        if require_vision and usable:
+            vision_usable = [
+                m for m in usable
+                if m.supports_vision and is_vision_model_id(clean_id, m.id)
+            ]
+            if vision_usable:
+                usable = vision_usable
         if not usable:
             candidates = [
                 m for m in _STATIC_FALLBACK_ORDER.get(clean_id, ())
                 if m not in excluded_models and is_usable_chat_model(m)
             ]
+            if require_vision and candidates:
+                vision_candidates = [
+                    m for m in candidates if is_vision_model_id(clean_id, m)
+                ]
+                if vision_candidates:
+                    candidates = vision_candidates
             if candidates:
                 best_fast = candidates[0]
                 best_deep = candidates[1] if len(candidates) > 1 else candidates[0]
@@ -538,11 +554,17 @@ class ModelCatalogService:
         manual_mode: bool = False,
         manual_fast: str = "",
         manual_deep: str = "",
+        require_vision: bool = False,
     ) -> ModelSelection:
         clean_id = provider_id.strip().lower()
         invalid = get_invalid_models(clean_id)
         cached = self.get_cached_models(clean_id)
-        auto = ModelAutoSelector.select(clean_id, cached, excluded_models=invalid)
+        auto = ModelAutoSelector.select(
+            clean_id,
+            cached,
+            excluded_models=invalid,
+            require_vision=require_vision,
+        )
 
         fast_chosen = (
             manual_fast.strip()

@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="referrer" content="no-referrer" />
+  <title>Puente OAuth PKCE y Setup Sync — DeusEx v3</title>
+  <meta
+    name="description"
+    content="Puente seguro OAuth 2.0 PKCE y Setup Sync para DeusEx v3 con lista blanca estricta hacia http://127.0.0.1."
+  />
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="container nav-bar">
+      <a class="brand" href="./index.html">
+        <span class="brand-mark" aria-hidden="true">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+            <circle cx="12" cy="12" r="8" stroke="#38BDF8" stroke-width="2" />
+            <circle cx="12" cy="12" r="3" fill="#38BDF8" />
+          </svg>
+        </span>
+        <span>DeusEx</span>
+        <span class="brand-tag">OAuth Bridge</span>
+      </a>
+
+      <nav class="nav-links" data-nav-links aria-label="Navegación principal">
+        <a href="./index.html">Inicio</a>
+        <a href="./guides.html">Guías</a>
+        <a href="./privacy.html">Privacidad</a>
+        <a href="./terms.html">Términos</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="section">
+    <div class="container" style="max-width: 760px;">
+      <section class="card card-accent" aria-live="polite">
+        <div class="inline-row" style="justify-content: space-between; margin-bottom: 0.85rem;">
+          <h1 style="margin: 0; font-size: 1.55rem;">Puente Local OAuth 2.0 PKCE</h1>
+          <span class="pill" id="bridge-pill" data-state="info">Validando respuesta...</span>
+        </div>
+
+        <p id="bridge-summary" style="color: var(--text-secondary); margin: 0 0 1rem;">
+          Verificando parámetros anti-CSRF (<span class="code-inline">state</span>) y destino loopback
+          estricto (<span class="code-inline">127.0.0.1</span>).
+        </p>
+
+        <div class="callout" id="bridge-callout" data-type="info">
+          Este puente jamás reenvía códigos ni tokens a servidores externos. El único destino permitido es
+          <span class="code-inline">http://127.0.0.1:&lt;puerto&gt;/callback</span> en tu propia PC.
+        </div>
+
+        <div id="oauth-actions" class="inline-row" style="margin-top: 1.15rem;" hidden>
+          <a id="manual-forward-link" class="btn btn-primary" href="#noop" rel="noreferrer">
+            Completar inicio de sesión en DeusEx local
+          </a>
+          <button type="button" class="btn" id="recheck-health-btn">
+            Verificar DeusEx local
+          </button>
+        </div>
+
+        <div id="setup-sync-bridge" style="margin-top: 1.35rem;" hidden>
+          <h2 style="margin: 0 0 0.5rem; font-size: 1.15rem;">Setup Sync directo detectado</h2>
+          <p style="margin: 0 0 0.85rem; color: var(--text-secondary); font-size: 0.92rem;">
+            Puedes enviar claves API directo a tu DeusEx local en
+            <span class="code-inline" id="sync-target-label">http://127.0.0.1:8888/setup-sync</span>.
+          </p>
+          <form class="form-grid" id="callback-sync-form" autocomplete="off">
+            <div class="field">
+              <label for="cb_gemini_key">GEMINI_API_KEY (opcional)</label>
+              <input id="cb_gemini_key" name="gemini_api_key" type="password" placeholder="AIzaSy..." />
+            </div>
+            <div class="field">
+              <label for="cb_discord_token">DISCORD_BOT_TOKEN (opcional)</label>
+              <input id="cb_discord_token" name="discord_bot_token" type="password" placeholder="Token del bot privado" />
+            </div>
+            <div class="inline-row">
+              <button type="submit" class="btn btn-primary">Sincronizar con DeusEx local</button>
+              <a class="btn" href="./guides.html#setup-sync">Ir a las guías completas</a>
+            </div>
+            <div class="callout" id="cb-sync-status" hidden role="status"></div>
+          </form>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-row">
+      <div>Protección anti Open-Redirect activa · Destino exclusivo: 127.0.0.1</div>
+      <div class="footer-links">
+        <a href="./index.html">Inicio</a>
+        <a href="./privacy.html">Privacidad</a>
+        <a href="./terms.html">Términos</a>
+      </div>
+    </div>
+  </footer>
+
+  <script src="./app.js"></script>
+  <script>
+    "use strict";
+
+    (() => {
+      const FORBIDDEN_REDIRECT_KEYS = [
+        "redirect",
+        "redirect_uri",
+        "redirect_url",
+        "next",
+        "return_to",
+        "return_url",
+        "target",
+        "dest",
+        "destination",
+        "host",
+        "callback_url",
+      ];
+
+      const pill = document.getElementById("bridge-pill");
+      const summary = document.getElementById("bridge-summary");
+      const callout = document.getElementById("bridge-callout");
+      const actionsRow = document.getElementById("oauth-actions");
+      const manualLink = document.getElementById("manual-forward-link");
+      const recheckBtn = document.getElementById("recheck-health-btn");
+      const syncSection = document.getElementById("setup-sync-bridge");
+      const syncTargetLabel = document.getElementById("sync-target-label");
+      const syncForm = document.getElementById("callback-sync-form");
+      const syncStatus = document.getElementById("cb-sync-status");
+
+      function setStatus(state, pillText, summaryText, calloutType, calloutText) {
+        if (pill) {
+          pill.setAttribute("data-state", state);
+          pill.textContent = pillText;
+        }
+        if (summary) summary.textContent = summaryText;
+        if (callout) {
+          callout.setAttribute("data-type", calloutType);
+          callout.textContent = calloutText;
+        }
+      }
+
+      function hasForbiddenRedirectAttempt(searchParams, hashParams) {
+        for (const key of FORBIDDEN_REDIRECT_KEYS) {
+          const val = searchParams.get(key) || hashParams.get(key);
+          if (val !== null && val.trim() !== "") {
+            return { key, value: val.trim() };
+          }
+        }
+        return null;
+      }
+
+      function initBridge() {
+        const portal = window.DeusExPortal;
+        if (!portal) {
+          setStatus(
+            "error",
+            "Error de carga",
+            "No se pudo inicializar el módulo de seguridad del portal.",
+            "error",
+            "Recarga esta página o abre el portal desde DeusEx v3."
+          );
+          return;
+        }
+
+        const searchParams = new URLSearchParams(window.location.search);
+        const hashParams = portal.parseHashParams();
+
+        // Bloqueo explícito anti Open-Redirect ante parámetros de destino externo
+        const forbidden = hasForbiddenRedirectAttempt(searchParams, hashParams);
+        if (forbidden !== null) {
+          window.history.replaceState(null, "", window.location.pathname);
+          setStatus(
+            "error",
+            "Bloqueado (Seguridad)",
+            "Se rechazó una redirección no autorizada por seguridad (anti Open-Redirect).",
+            "error",
+            `El parámetro '${forbidden.key}' no está permitido. Este puente solo acepta reenvíos hacia http://127.0.0.1:<puerto>/callback.`
+          );
+          return;
+        }
+
+        const rawPort = searchParams.get("port") || hashParams.get("port") || portal.DEFAULT_OAUTH_PORT;
+        let safePort;
+        try {
+          safePort = portal.parseSafePort(rawPort);
+        } catch (err) {
+          setStatus(
+            "error",
+            "Puerto rechazado",
+            "El puerto local indicado no es válido.",
+            "error",
+            err instanceof Error ? err.message : "Puerto fuera del rango permitido."
+          );
+          return;
+        }
+
+        // Modo 1: Setup Sync vía fragmento (#sync_token=...)
+        const syncToken = hashParams.get("sync_token");
+        const oauthCode = searchParams.get("code");
+        const oauthError = searchParams.get("error");
+        const oauthState = searchParams.get("state");
+
+        if (syncToken && !oauthCode && !oauthError) {
+          let validatedToken;
+          try {
+            validatedToken = portal.validateSyncToken(syncToken);
+          } catch (err) {
+            setStatus(
+              "error",
+              "Token inválido",
+              "El token efímero de Setup Sync no es válido.",
+              "error",
+              err instanceof Error ? err.message : "Token inválido."
+            );
+            return;
+          }
+
+          window.history.replaceState(null, "", window.location.pathname);
+          if (syncTargetLabel) {
+            syncTargetLabel.textContent = `http://127.0.0.1:${safePort}/setup-sync`;
+          }
+          if (syncSection) syncSection.hidden = false;
+          setStatus(
+            "ok",
+            `Setup Sync :${safePort}`,
+            "Sesión Setup Sync validada. Envía tus claves directamente a tu DeusEx local.",
+            "ok",
+            "Ningún dato sale hacia servidores externos: la transmisión ocurre únicamente por loopback 127.0.0.1."
+          );
+
+          if (syncForm instanceof HTMLFormElement) {
+            syncForm.addEventListener("submit", async (ev) => {
+              ev.preventDefault();
+              const geminiInput = document.getElementById("cb_gemini_key");
+              const discordInput = document.getElementById("cb_discord_token");
+              const secrets = {};
+              if (geminiInput instanceof HTMLInputElement && geminiInput.value.trim()) {
+                secrets.GEMINI_API_KEY = geminiInput.value.trim();
+              }
+              if (discordInput instanceof HTMLInputElement && discordInput.value.trim()) {
+                secrets.DISCORD_BOT_TOKEN = discordInput.value.trim();
+              }
+              if (Object.keys(secrets).length === 0) {
+                if (syncStatus) {
+                  syncStatus.hidden = false;
+                  syncStatus.setAttribute("data-type", "warn");
+                  syncStatus.textContent = "Ingresa al menos una clave para sincronizar.";
+                }
+                return;
+              }
+              if (syncStatus) {
+                syncStatus.hidden = false;
+                syncStatus.setAttribute("data-type", "info");
+                syncStatus.textContent = "Enviando credenciales hacia 127.0.0.1...";
+              }
+              const res = await portal.sendSetupSync({
+                port: safePort,
+                syncToken: validatedToken,
+                secrets,
+              });
+              if (syncStatus) {
+                syncStatus.setAttribute("data-type", res.ok ? "ok" : "error");
+                syncStatus.textContent = res.message;
+              }
+              if (res.ok) {
+                if (geminiInput instanceof HTMLInputElement) geminiInput.value = "";
+                if (discordInput instanceof HTMLInputElement) discordInput.value = "";
+              }
+            });
+          }
+          return;
+        }
+
+        // Modo 2: Callback OAuth 2.0 PKCE (code o error + state obligatorio)
+        if (!oauthCode && !oauthError) {
+          setStatus(
+            "warn",
+            "Esperando OAuth",
+            "Esta página se abre automáticamente al iniciar sesión desde DeusEx v3.",
+            "warn",
+            "Inicia la vinculación desde Integraciones dentro de DeusEx v3 o abre Guías para usar Setup Sync."
+          );
+          return;
+        }
+
+        let safeForwardUrl;
+        try {
+          safeForwardUrl = portal.buildOAuthLoopbackForwardUrl({
+            port: safePort,
+            code: oauthCode,
+            state: oauthState,
+            error: oauthError,
+            errorDescription: searchParams.get("error_description"),
+            provider: searchParams.get("provider"),
+          });
+        } catch (err) {
+          window.history.replaceState(null, "", window.location.pathname);
+          setStatus(
+            "error",
+            "Validación rechazada",
+            "No se puede completar el inicio de sesión por validación de seguridad.",
+            "error",
+            err instanceof Error ? err.message : "Parámetros OAuth inválidos."
+          );
+          return;
+        }
+
+        // Limpia query params sensibles de la barra de direcciones antes de reenviar
+        window.history.replaceState(null, "", window.location.pathname);
+
+        if (manualLink instanceof HTMLAnchorElement) {
+          manualLink.href = safeForwardUrl;
+        }
+        if (actionsRow) actionsRow.hidden = false;
+
+        if (recheckBtn) {
+          recheckBtn.addEventListener("click", async () => {
+            const health = await portal.checkLocalHealth(safePort);
+            setStatus(
+              health.online ? "ok" : "warn",
+              health.online ? `DeusEx activo :${safePort}` : "DeusEx local cerrado",
+              health.online
+                ? "DeusEx local detectado. Pulsa el botón para completar la vinculación."
+                : "Abre DeusEx v3 en tu PC e inicia la vinculación nuevamente.",
+              health.online ? "ok" : "warn",
+              health.online
+                ? `Destino verificado: http://127.0.0.1:${safePort}/callback`
+                : health.error || "No se detectó el servidor local."
+            );
+          });
+        }
+
+        setStatus(
+          "ok",
+          `Redirigiendo a 127.0.0.1:${safePort}`,
+          "Autorización recibida y validada (anti-CSRF OK). Entregando código a tu DeusEx local...",
+          "ok",
+          `Reenviando únicamente hacia http://127.0.0.1:${safePort}/callback. Si tu navegador no redirige automáticamente, usa el botón de abajo.`
+        );
+
+        window.setTimeout(() => {
+          window.location.assign(safeForwardUrl);
+        }, 350);
+      }
+
+      document.addEventListener("DOMContentLoaded", initBridge);
+    })();
+  </script>
+</body>
+</html>

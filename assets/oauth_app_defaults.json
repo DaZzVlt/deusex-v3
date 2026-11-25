@@ -1,0 +1,52 @@
+{
+  "schema_version": 1,
+  "portal_base_url": "https://dazzvlt.github.io/deusex-v3",
+  "oauth_callback_port": 8888,
+  "allowed_cors_origins": [
+    "https://dazzvlt.github.io",
+    "http://127.0.0.1:8888",
+    "http://localhost:8888"
+  ],
+  "google": {
+    "client_id": "",
+    "auth_uri": "https://accounts.google.com/o/oauth2/v2/auth",
+    "token_uri": "https://oauth2.googleapis.com/token",
+    "userinfo_uri": "https://openidconnect.googleapis.com/v1/userinfo",
+    "revoke_uri": "https://oauth2.googleapis.com/revoke",
+    "redirect_uri_template": "http://127.0.0.1:{port}/callback",
+    "scopes": [
+      "openid",
+      "email",
+      "profile",
+      "https://www.googleapis.com/auth/gmail.readonly",
+      "https://www.googleapis.com/auth/gmail.compose",
+      "https://www.googleapis.com/auth/calendar",
+      "https://www.googleapis.com/auth/tasks",
+      "https://www.googleapis.com/auth/drive.file",
+      "https://www.googleapis.com/auth/youtube.readonly"
+    ]
+  },
+  "spotify": {
+    "client_id": "",
+    "auth_uri": "https://accounts.spotify.com/authorize",
+    "token_uri": "https://accounts.spotify.com/api/token",
+    "redirect_uri": "http://127.0.0.1:8888/callback",
+    "scopes": [
+      "user-read-playback-state",
+      "user-modify-playback-state",
+      "user-read-currently-playing",
+      "user-library-read",
+      "playlist-read-private"
+    ]
+  },
+  "tidal": {
+    "client_id": "",
+    "auth_uri": "https://login.tidal.com/authorize",
+    "token_uri": "https://auth.tidal.com/v1/oauth2/token",
+    "redirect_uri_template": "http://127.0.0.1:{port}/callback",
+    "scopes": [
+      "user.read",
+      "playlists.read"
+    ]
+  }
+}

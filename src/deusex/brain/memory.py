@@ -245,7 +245,7 @@ class MemoryManager:
                    sources_json, tokens_in, tokens_out, created_at
             FROM messages
             WHERE conversation_id = ?
-            ORDER BY created_at ASC
+            ORDER BY created_at ASC, rowid ASC
             LIMIT ?
             """,
             (conversation_id, limit),
@@ -284,14 +284,26 @@ class MemoryManager:
         return result
 
     def recent_llm_messages(self, conversation_id: str, *, limit: int = 16) -> list[LLMMessage]:
-        all_msgs = self.get_messages(conversation_id, limit=limit * 2)
-        trimmed = all_msgs[-limit:]
+        bounded_limit = max(1, int(limit))
+        rows = self._db.fetchall(
+            """
+            SELECT role, content
+            FROM messages
+            WHERE conversation_id = ?
+              AND role IN ('user', 'assistant')
+            ORDER BY created_at DESC, rowid DESC
+            LIMIT ?
+            """,
+            (conversation_id, bounded_limit),
+        )
         result: list[LLMMessage] = []
-        for msg in trimmed:
-            if msg.role == "user":
-                result.append(LLMMessage(role="user", content=msg.content))
-            elif msg.role == "assistant":
-                result.append(LLMMessage(role="assistant", content=msg.content))
+        for row in reversed(rows):
+            role = str(row["role"])
+            content = str(row["content"])
+            if role == "user":
+                result.append(LLMMessage(role="user", content=content))
+            elif role == "assistant":
+                result.append(LLMMessage(role="assistant", content=content))
         return result
 
     # ------------------------------------------------------------------

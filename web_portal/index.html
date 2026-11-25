@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DeusEx v3 — Asistente Personal Modular Local-First para Windows 11</title>
+  <meta
+    name="description"
+    content="DeusEx v3 es un asistente personal autónomo y local-first para Windows 11 con Fast-Path sin tokens, voz offline, control del PC, Smart TV, Google Workspace y privacidad real."
+  />
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="container nav-bar">
+      <a class="brand" href="./index.html">
+        <span class="brand-mark" aria-hidden="true">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+            <circle cx="12" cy="12" r="8" stroke="#38BDF8" stroke-width="2" />
+            <circle cx="12" cy="12" r="3" fill="#38BDF8" />
+            <path d="M12 2V5M12 19V22M2 12H5M19 12H22" stroke="#818CF8" stroke-width="1.8" stroke-linecap="round" />
+          </svg>
+        </span>
+        <span>DeusEx</span>
+        <span class="brand-tag">v3.0</span>
+      </a>
+
+      <button
+        type="button"
+        class="nav-toggle"
+        data-nav-toggle
+        aria-expanded="false"
+        aria-label="Abrir navegación"
+      >
+        Menú
+      </button>
+
+      <nav class="nav-links" data-nav-links aria-label="Navegación principal">
+        <a href="./index.html" class="active">Inicio</a>
+        <a href="./guides.html">Guías y Setup Sync</a>
+        <a href="./privacy.html">Privacidad</a>
+        <a href="./terms.html">Términos</a>
+        <a href="https://github.com" data-github-releases target="_blank" rel="noopener noreferrer">
+          Releases
+        </a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="container hero-grid">
+        <div>
+          <span class="pill" data-state="info">Windows 11 64-bit · 100% Local-First · Zero-Base</span>
+          <h1>Tu centro de control autónomo en Windows 11, sin servidores intermedios.</h1>
+          <p class="hero-lead">
+            DeusEx v3 unifica control local del PC, voz offline con escudo contextual, Smart TV y red local,
+            música, Google Workspace, Discord, WhatsApp y app móvil. Todo corre en tu equipo con respuestas
+            instantáneas sin gastar tokens en comandos cotidianos.
+          </p>
+
+          <div class="hero-actions">
+            <a
+              class="btn btn-primary"
+              href="https://github.com"
+              data-github-releases
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Descargar en GitHub Releases
+            </a>
+            <a class="btn" href="./guides.html">Ver guías paso a paso</a>
+            <a class="btn" href="./guides.html#setup-sync">Abrir Setup Sync local</a>
+          </div>
+
+          <div class="hero-meta">
+            <span>Instalación 1-clic sin consola</span>
+            <span>·</span>
+            <span>SQLite WAL en tu PC</span>
+            <span>·</span>
+            <span>Modo Privacidad <span class="code-inline">Ctrl+Shift+P</span></span>
+          </div>
+        </div>
+
+        <aside class="hero-panel" aria-label="Resumen de arquitectura local">
+          <div class="hero-panel-head">
+            <strong>Estado del Puente Local</strong>
+            <span class="pill" data-local-status-pill>Sin verificar</span>
+          </div>
+          <div class="metric-list">
+            <div class="metric-item">
+              <span>Reflejos Fast-Path offline</span>
+              <strong>&lt; 50 ms · 0 tokens</strong>
+            </div>
+            <div class="metric-item">
+              <span>Puerto OAuth PKCE / Setup Sync</span>
+              <strong>127.0.0.1:8888</strong>
+            </div>
+            <div class="metric-item">
+              <span>Almacenamiento de secretos</span>
+              <strong>%LOCALAPPDATA%\DeusEx\</strong>
+            </div>
+            <div class="metric-item">
+              <span>Control de acciones críticas</span>
+              <strong>SafetyGate físico</strong>
+            </div>
+          </div>
+          <div class="inline-row" style="margin-top: 1rem;">
+            <button type="button" class="btn btn-sm" data-check-local-btn>
+              Verificar DeusEx en este PC
+            </button>
+            <a class="btn btn-sm" href="./privacy.html">Leer política Limited Use</a>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="container">
+        <div class="section-header">
+          <h2>Diseñado para usarse desde el minuto 1</h2>
+          <p>
+            Cada módulo enchufable inicia apagado (arquitectura Zero-Base) para mantener consumo mínimo
+            de RAM y CPU, activándose solo cuando decides conectarlo.
+          </p>
+        </div>
+
+        <div class="grid-3">
+          <article class="card">
+            <h3>3 Superficies Fluent nativas</h3>
+            <p>
+              Orbe flotante click-through con subtítulos palabra por palabra, Mini-Chat rápido
+              (<span class="code-inline">Alt+Espacio</span>) y Dashboard completo con tema automático de Windows 11.
+            </p>
+          </article>
+
+          <article class="card">
+            <h3>Voz Offline + Escudo Contextual</h3>
+            <p>
+              Vosk en español pre-empaquetado, filtro de campo lejano, biometría vocal 26D opcional,
+              detección de llamadas activas y atenuación selectiva de multimedia.
+            </p>
+          </article>
+
+          <article class="card">
+            <h3>Inteligencia Web y Visión Live</h3>
+            <p>
+              Clima con Open-Meteo gratuito, noticias RSS locales, extracción de PDF/URL/YouTube y
+              Guía Live por turnos con captura DPI-aware multi-monitor (0 tokens en pausa).
+            </p>
+          </article>
+
+          <article class="card">
+            <h3>PC Local y Red Doméstica</h3>
+            <p>
+              Apertura nativa sobre <span class="code-inline">shell:AppsFolder</span>, volumen por app,
+              rutinas con captura de estado y descubrimiento LAN para Samsung TV, Chromecast, Miracast y Xbox.
+            </p>
+          </article>
+
+          <article class="card">
+            <h3>OAuth 2.0 PKCE en 1 clic</h3>
+            <p>
+              Conecta Google Workspace, Spotify y TIDAL sin editar archivos JSON. Este portal reenvía el código
+              exclusivamente a tu loopback local <span class="code-inline">127.0.0.1:8888</span>.
+            </p>
+          </article>
+
+          <article class="card">
+            <h3>Privacidad y Control Total</h3>
+            <p>
+              Cero servidores centrales de DeusEx. Acciones sensibles retenidas en SafetyGate con
+              cuenta regresiva y respaldo portable sin llaves ni tokens.
+            </p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="container">
+        <div class="card card-accent">
+          <div class="grid-2" style="align-items: center;">
+            <div>
+              <span class="pill" data-state="ok">Setup Sync directo a 127.0.0.1</span>
+              <h2 style="margin: 0.7rem 0 0.5rem;">Configura tus claves en segundos</h2>
+              <p>
+                Sigue nuestras guías ilustradas para obtener tu clave gratuita de Gemini, crear tu bot
+                privado de Discord o vincular tu Smart TV y envíalo directamente a tu DeusEx local usando
+                el token efímero de sesión.
+              </p>
+            </div>
+            <div class="inline-row" style="justify-content: flex-end;">
+              <a class="btn btn-primary" href="./guides.html#gemini">Guía Gemini API Key</a>
+              <a class="btn" href="./guides.html#discord">Guía Bot Discord</a>
+              <a class="btn" href="./guides.html#mobile">App Móvil APK</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-row">
+      <div>DeusEx v3 · Software local-first para Windows 11. Cero telemetría externa.</div>
+      <div class="footer-links">
+        <a href="./guides.html">Guías</a>
+        <a href="./privacy.html">Privacidad (Google Limited Use)</a>
+        <a href="./terms.html">Términos (Open-Meteo CC BY 4.0)</a>
+        <a href="https://github.com" data-github-repo target="_blank" rel="noopener noreferrer">Repositorio</a>
+      </div>
+    </div>
+  </footer>
+
+  <script src="./app.js" defer></script>
+</body>
+</html>

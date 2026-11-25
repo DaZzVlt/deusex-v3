@@ -241,10 +241,82 @@ _NON_CHAT_MODEL_TOKENS: tuple[str, ...] = (
 )
 
 
+_GROQ_VISION_TOKENS: tuple[str, ...] = (
+    "vision",
+    "llama-4-scout",
+    "llama-4-maverick",
+    "llava",
+)
+_OPENROUTER_VISION_TOKENS: tuple[str, ...] = (
+    "gemini",
+    "claude",
+    "gpt-4o",
+    "gpt-4.1",
+    "gpt-4.5",
+    "gpt-5",
+    "vision",
+    "-vl",
+    "vl-",
+    "pixtral",
+    "llama-4",
+    "multimodal",
+    "grok-2-vision",
+    "grok-4",
+)
+_OPENROUTER_TEXT_ONLY_TOKENS: tuple[str, ...] = (
+    "llama-3.1",
+    "llama-3.3",
+    "llama-3-",
+    "llama3",
+    "mixtral",
+    "gemma-2",
+    "gemma2",
+    "deepseek-chat",
+    "deepseek-reasoner",
+    "deepseek-r1",
+    "deepseek-v3",
+    "qwen3",
+    "qwen-2.5",
+    "qwen2.5",
+    "qwen-qwq",
+    "qwq-",
+)
+
+
 def is_usable_chat_model(model_id: str) -> bool:
     """Descarta embeddings, generadores de imagen/video y modelos no aptos para chat."""
     lowered = model_id.lower()
     return not any(token in lowered for token in _NON_CHAT_MODEL_TOKENS)
+
+
+def is_vision_model_id(provider_id: str, model_id: str) -> bool:
+    """Determina si el modelo tiene soporte visual real para imágenes adjuntas."""
+    pid = provider_id.strip().lower()
+    mid = model_id.strip().lower()
+    if not mid:
+        return False
+    if pid == "deepseek":
+        return False
+    if pid == "gemini":
+        return True
+    if pid == "anthropic":
+        return "claude" in mid
+    if pid == "openai":
+        return not (
+            mid.startswith("gpt-3.5")
+            or mid.startswith("o1-mini")
+            or mid.startswith("o3-mini")
+        )
+    if pid == "xai":
+        return "vision" in mid or "grok-4" in mid or "grok-2-image" in mid
+    if pid == "groq":
+        return any(tok in mid for tok in _GROQ_VISION_TOKENS)
+    if pid == "openrouter":
+        if any(tok in mid for tok in _OPENROUTER_VISION_TOKENS):
+            return True
+        return not any(tok in mid for tok in _OPENROUTER_TEXT_ONLY_TOKENS)
+    meta = PROVIDER_METADATA.get(pid)
+    return bool(meta.supports_vision) if meta is not None else False
 
 
 def detect_api_key_from_text(text: str) -> tuple[str, str, str] | None:
@@ -606,12 +678,21 @@ class OpenAICompatProvider(LLMProvider):
             model_id = str(item.get("id", "")).strip()
             if not model_id or not is_usable_chat_model(model_id):
                 continue
+            arch = item.get("architecture")
+            supports_vision = is_vision_model_id(self.provider_id, model_id)
+            if isinstance(arch, dict):
+                input_mods = arch.get("input_modalities")
+                modality = str(arch.get("modality") or "").lower()
+                if isinstance(input_mods, list):
+                    supports_vision = "image" in [str(x).lower() for x in input_mods]
+                elif modality:
+                    supports_vision = "image" in modality
             models.append(
                 ModelInfo(
                     id=model_id,
                     provider_id=self.provider_id,
                     display_name=str(item.get("name") or model_id),
-                    supports_vision=self._meta.supports_vision,
+                    supports_vision=supports_vision,
                     supports_audio=False,
                     supports_tools=True,
                     context_window=int(item.get("context_length") or 0),

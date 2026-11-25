@@ -20,6 +20,7 @@ from deusex.brain.providers import (
     MediaAttachment,
     ModelTier,
     ProviderError,
+    is_vision_model_id,
 )
 from deusex.core.config import DeusExSettings
 from deusex.core.contracts import FastPathRule, RiskLevel, ToolResult
@@ -250,7 +251,37 @@ class BrainOrchestrator:
             requested = ModelTier.DEEP
         return self._cost_guard.resolve_effective_tier(requested)
 
-    def _pick_provider_order(self) -> list[str]:
+    def _provider_has_vision_model(self, provider_id: str, tier: ModelTier) -> bool:
+        provider = self._pool.get_provider(provider_id)
+        if not provider.metadata.supports_vision:
+            return False
+        manual = (
+            self._settings.brain.model_selection_mode == "manual"
+            and provider_id == self._settings.brain.primary_provider
+        )
+        selection = self._catalog.select_models(
+            provider_id,
+            manual_mode=manual,
+            manual_fast=self._settings.brain.manual_fast_model,
+            manual_deep=self._settings.brain.manual_deep_model,
+            require_vision=True,
+        )
+        model_id = selection.for_tier(tier)
+        if not model_id or not is_vision_model_id(provider_id, model_id):
+            return False
+        cached = self._catalog.get_cached_models(provider_id)
+        if cached:
+            for item in cached:
+                if item.id == model_id:
+                    return bool(item.supports_vision)
+        return True
+
+    def _pick_provider_order(
+        self,
+        *,
+        require_vision: bool = False,
+        tier: ModelTier = ModelTier.DEEP,
+    ) -> list[str]:
         configured = self._pool.list_configured_provider_ids()
         primary = self._settings.brain.primary_provider.strip().lower()
         ordered: list[str] = []
@@ -259,7 +290,19 @@ class BrainOrchestrator:
         for pid in configured:
             if pid not in ordered:
                 ordered.append(pid)
-        return ordered
+        if not require_vision:
+            return ordered
+
+        confirmed_vision: list[str] = []
+        text_fallback_vision: list[str] = []
+        for pid in ordered:
+            if not self._pool.get_provider(pid).metadata.supports_vision:
+                continue
+            if self._provider_has_vision_model(pid, tier):
+                confirmed_vision.append(pid)
+            else:
+                text_fallback_vision.append(pid)
+        return (confirmed_vision + text_fallback_vision) or ordered
 
     async def handle_user_input(
         self,
@@ -291,6 +334,7 @@ class BrainOrchestrator:
         # 1. Fast-Path (soporta órdenes simples o encadenadas)
         fp_summaries: list[str] = []
         fp_spoken: list[str] = []
+        fp_sources: list[dict[str, str]] = []
         remaining_clauses: list[str] = []
         any_dry_run = False
 
@@ -302,6 +346,8 @@ class BrainOrchestrator:
                     self._cost_guard.record_fast_path_hit(rule_id="fast_path")
                     fp_summaries.append(fp_res.summary)
                     fp_spoken.append(fp_res.spoken_text if fp_res.spoken_text is not None else fp_res.summary)
+                    if fp_res.sources:
+                        fp_sources.extend(fp_res.sources)
                     any_dry_run = any_dry_run or fp_res.dry_run
                 else:
                     remaining_clauses.append(clause)
@@ -309,12 +355,14 @@ class BrainOrchestrator:
         if fp_summaries and not remaining_clauses:
             reply = "\n".join(fp_summaries)
             spoken = " ".join(s for s in fp_spoken if s).strip()
+            dedup_fp_sources = tuple(fp_sources)
             asst_record = self._memory.append_message(
                 conversation_id=conv_id,
                 role="assistant",
                 content=reply,
                 model_used="fast-path",
                 fast_path=True,
+                sources=dedup_fp_sources,
             )
             self._events.publish(
                 ChatMessageEvent(
@@ -324,6 +372,7 @@ class BrainOrchestrator:
                     content=reply,
                     model_used="fast-path",
                     fast_path=True,
+                    sources=dedup_fp_sources,
                 )
             )
             return TurnResult(
@@ -334,6 +383,7 @@ class BrainOrchestrator:
                 spoken_text=spoken,
                 model_used="fast-path",
                 fast_path=True,
+                sources=dedup_fp_sources,
                 dry_run=any_dry_run,
             )
 
@@ -343,7 +393,16 @@ class BrainOrchestrator:
         )
 
         # 3. Llamada al cerebro IA (Multi-Provider + Fallback automático)
-        provider_order = self._pick_provider_order()
+        tier = (
+            self._cost_guard.resolve_effective_tier(requested_tier)
+            if requested_tier is not None
+            else self._infer_tier(clean_text, attachments)
+        )
+        has_image_attachment = any(att.mime_type.startswith("image/") for att in attachments)
+        provider_order = self._pick_provider_order(
+            require_vision=has_image_attachment,
+            tier=tier,
+        )
         if not provider_order:
             no_key_msg = (
                 "No hay ninguna clave de IA configurada todavía. "
@@ -381,12 +440,6 @@ class BrainOrchestrator:
                 error_code="no_provider_configured",
             )
 
-        tier = (
-            self._cost_guard.resolve_effective_tier(requested_tier)
-            if requested_tier is not None
-            else self._infer_tier(clean_text, attachments)
-        )
-
         system_prompt = self._profiles.compose_system_prompt(
             profile_id=self._settings.ui.active_profile_id,
             tone=self._settings.ui.active_tone,
@@ -398,14 +451,24 @@ class BrainOrchestrator:
         )
 
         history = self._memory.recent_llm_messages(conv_id, limit=14)
+        prompt_tail = " y ".join(remaining_clauses) if remaining_clauses else clean_text
+        if not prompt_tail and attachments:
+            prompt_tail = (
+                "Describe brevemente qué ves en mi pantalla y en qué puedes ayudarme ahora."
+            )
+        elif prompt_tail == "📷 Analizar pantalla" and attachments:
+            prompt_tail = (
+                "📷 Analizar pantalla: describe brevemente qué ves y en qué puedes ayudarme ahora."
+            )
+        if fp_summaries:
+            prompt_tail = (
+                f"[Acciones locales ya completadas: {'; '.join(fp_summaries)}]\n"
+                f"Pendiente del usuario: {prompt_tail}"
+            )
         if history and history[-1].role == "user":
-            prompt_tail = " y ".join(remaining_clauses) if remaining_clauses else clean_text
-            if fp_summaries:
-                prompt_tail = (
-                    f"[Acciones locales ya completadas: {'; '.join(fp_summaries)}]\n"
-                    f"Pendiente del usuario: {prompt_tail}"
-                )
             history[-1] = LLMMessage(role="user", content=prompt_tail, attachments=attachments)
+        else:
+            history.append(LLMMessage(role="user", content=prompt_tail, attachments=attachments))
 
         available_tools = tuple(self._engine.tools.list_tools())
         last_error: BaseException | None = None
@@ -422,6 +485,7 @@ class BrainOrchestrator:
                 manual_mode=manual,
                 manual_fast=self._settings.brain.manual_fast_model,
                 manual_deep=self._settings.brain.manual_deep_model,
+                require_vision=has_image_attachment,
             )
             model_id = selection.for_tier(tier)
 
@@ -464,13 +528,14 @@ class BrainOrchestrator:
             if not full_reply:
                 full_reply = "\n".join(fp_summaries) or "Listo."
 
+            combined_sources = tuple(fp_sources) + sources
             asst_record = self._memory.append_message(
                 conversation_id=conv_id,
                 role="assistant",
                 content=full_reply,
                 model_used=f"{provider_id}:{model_id}",
                 fast_path=False,
-                sources=sources,
+                sources=combined_sources,
                 tokens_in=total_in,
                 tokens_out=total_out,
             )
@@ -482,7 +547,7 @@ class BrainOrchestrator:
                     content=full_reply,
                     model_used=asst_record.model_used,
                     fast_path=False,
-                    sources=sources,
+                    sources=combined_sources,
                 )
             )
             return TurnResult(
@@ -493,7 +558,7 @@ class BrainOrchestrator:
                 spoken_text=full_reply,
                 model_used=asst_record.model_used,
                 fast_path=False,
-                sources=sources,
+                sources=combined_sources,
                 saved_memories=saved_memories,
                 dry_run=any_dry_run or tool_dry_run,
             )

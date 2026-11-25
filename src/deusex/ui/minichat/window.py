@@ -18,16 +18,19 @@ from PySide6.QtWidgets import (
 
 from deusex.app import DeusExApplication
 from deusex.brain.orchestrator import TurnResult
+from deusex.core.contracts import ModuleState
 from deusex.core.events import (
+    LiveGuideStateChangedEvent,
     SafetyConfirmationRequestedEvent,
     SafetyConfirmationResolvedEvent,
+    ScreenCapturedEvent,
 )
 from deusex.ui.bridge_qt import QtEventBridge
 from deusex.ui.components import ChatBubble, SafetyCard
 
 
 class MiniChatWindow(QWidget):
-    """Ventana compacta (420x520) en esquina inferior derecha enfocada en comandos rápidos (Alt+Espacio)."""
+    """Ventana compacta (450x520) en esquina inferior derecha enfocada en comandos rápidos (Alt+Espacio)."""
 
     open_full_history_requested = Signal()
     _turn_finished = Signal(object)
@@ -49,8 +52,8 @@ class MiniChatWindow(QWidget):
 
         self.setObjectName("MiniChatRoot")
         self.setWindowTitle("DeusEx · Comando Rápido")
-        self.resize(420, 520)
-        self.setMinimumSize(360, 400)
+        self.resize(450, 520)
+        self.setMinimumSize(420, 400)
         self.setWindowFlags(
             Qt.WindowType.Window
             | Qt.WindowType.WindowStaysOnTopHint
@@ -69,16 +72,19 @@ class MiniChatWindow(QWidget):
         # Barra superior de una sola línea
         top = QHBoxLayout()
         top.setContentsMargins(0, 0, 0, 0)
-        top.setSpacing(6)
+        top.setSpacing(4)
 
         self.profile_combo = QComboBox(self)
         self.profile_combo.setToolTip("Cambiar perfil activo")
-        self.profile_combo.setMaximumWidth(120)
+        self.profile_combo.setMaximumWidth(105)
         top.addWidget(self.profile_combo)
+
+        icon_btn_style = "QPushButton { padding: 0px; font-size: 16px; }"
 
         self.mute_btn = QPushButton("🔊", self)
         self.mute_btn.setProperty("variant", "ghost")
-        self.mute_btn.setFixedSize(32, 32)
+        self.mute_btn.setFixedSize(36, 34)
+        self.mute_btn.setStyleSheet(icon_btn_style)
         self.mute_btn.setToolTip("Silenciar o reactivar respuesta por voz")
         self.mute_btn.clicked.connect(self._on_toggle_mute)
         top.addWidget(self.mute_btn)
@@ -86,7 +92,10 @@ class MiniChatWindow(QWidget):
         self.pin_btn = QPushButton("📌", self)
         self.pin_btn.setProperty("variant", "pill")
         self.pin_btn.setProperty("selected", True)
-        self.pin_btn.setFixedHeight(30)
+        self.pin_btn.setFixedSize(36, 34)
+        self.pin_btn.setStyleSheet(
+            'QPushButton, QPushButton[variant="pill"] { padding: 0px; font-size: 15px; }'
+        )
         self.pin_btn.setToolTip("Mantener siempre encima")
         self.pin_btn.clicked.connect(self.toggle_pin)
         top.addWidget(self.pin_btn)
@@ -94,21 +103,37 @@ class MiniChatWindow(QWidget):
         # Botones de Visión (ocultos hasta que el módulo vision esté activo en Rebanada 5)
         self.capture_btn = QPushButton("📷", self)
         self.capture_btn.setProperty("variant", "ghost")
-        self.capture_btn.setFixedSize(32, 32)
+        self.capture_btn.setFixedSize(36, 34)
+        self.capture_btn.setStyleSheet(icon_btn_style)
         self.capture_btn.setToolTip("Captura puntual de pantalla")
         self.capture_btn.setVisible(False)
+        self.capture_btn.clicked.connect(self._on_quick_capture)
         top.addWidget(self.capture_btn)
 
         self.live_guide_btn = QPushButton("Guía", self)
         self.live_guide_btn.setProperty("variant", "pill")
+        self.live_guide_btn.setStyleSheet(
+            'QPushButton[variant="pill"] { padding: 5px 7px; }'
+        )
         self.live_guide_btn.setToolTip("Iniciar Modo Guía Live por turnos")
         self.live_guide_btn.setVisible(False)
+        self.live_guide_btn.clicked.connect(self._on_toggle_live_guide)
         top.addWidget(self.live_guide_btn)
+
+        self.live_guide_stop_btn = QPushButton("■", self)
+        self.live_guide_stop_btn.setProperty("variant", "ghost")
+        self.live_guide_stop_btn.setFixedSize(36, 34)
+        self.live_guide_stop_btn.setStyleSheet(icon_btn_style)
+        self.live_guide_stop_btn.setToolTip("Detener Modo Guía Live")
+        self.live_guide_stop_btn.setVisible(False)
+        self.live_guide_stop_btn.clicked.connect(self._on_stop_live_guide)
+        top.addWidget(self.live_guide_stop_btn)
 
         top.addStretch(1)
 
         self.full_history_btn = QPushButton("Historial →", self)
         self.full_history_btn.setProperty("variant", "ghost")
+        self.full_history_btn.setStyleSheet("QPushButton { padding: 5px 6px; }")
         self.full_history_btn.setToolTip("Abrir la Ventana Principal con el historial completo")
         self.full_history_btn.clicked.connect(self.open_full_history_requested.emit)
         top.addWidget(self.full_history_btn)
@@ -160,6 +185,9 @@ class MiniChatWindow(QWidget):
         self._bridge.profile_changed.connect(lambda _e: self.sync_controls())
         self._bridge.voice_mute_changed.connect(lambda _m: self.sync_controls())
         self._bridge.module_state_changed.connect(lambda _e: self.sync_controls())
+        self._bridge.privacy_mode_changed.connect(lambda _p: self.sync_controls())
+        self._bridge.live_guide_state_changed.connect(self._on_live_guide_state_changed)
+        self._bridge.screen_captured.connect(self._on_screen_captured)
 
     def sync_controls(self) -> None:
         self._syncing = True
@@ -174,11 +202,59 @@ class MiniChatWindow(QWidget):
             muted = self._app.settings.voice.tts_muted
             self.mute_btn.setText("🔇" if muted else "🔊")
 
-            vision_active = self._app.settings.modules.vision and (
-                self._app.engine.modules.get("vision") is not None
-            )
+            vision_active = self._app.vision_module.state == ModuleState.ACTIVE
+            privacy_on = self._app.settings.general.privacy_mode
+            lg_state = self._app.get_live_guide_state() if vision_active else "off"
+
             self.capture_btn.setVisible(vision_active)
+            self.capture_btn.setEnabled(vision_active and not privacy_on and not self._busy)
+            self.capture_btn.setToolTip(
+                "Bloqueado en Modo Privacidad"
+                if privacy_on
+                else "Captura rápida de pantalla y análisis multimodal"
+            )
+
             self.live_guide_btn.setVisible(vision_active)
+            self.live_guide_stop_btn.setVisible(vision_active and lg_state in ("active", "paused"))
+
+            if lg_state == "active":
+                self.live_guide_btn.setText("Guía: ON")
+                self.live_guide_btn.setProperty("selected", True)
+                self.live_guide_btn.setEnabled(True)
+                self.live_guide_btn.setToolTip("Guía Live activa por turnos (clic para pausar)")
+            elif lg_state == "paused":
+                self.live_guide_btn.setText("Guía: Pausa")
+                self.live_guide_btn.setProperty("selected", False)
+                self.live_guide_btn.setEnabled(not privacy_on)
+                self.live_guide_btn.setToolTip(
+                    "Bloqueado en Modo Privacidad"
+                    if privacy_on
+                    else "Guía Live en pausa · 0 capturas / 0 tokens (clic para reanudar)"
+                )
+            else:
+                self.live_guide_btn.setText("Guía")
+                self.live_guide_btn.setProperty("selected", False)
+                self.live_guide_btn.setEnabled(not privacy_on)
+                self.live_guide_btn.setToolTip(
+                    "Bloqueado en Modo Privacidad"
+                    if privacy_on
+                    else "Iniciar Modo Guía Live por turnos"
+                )
+
+            self.live_guide_btn.style().unpolish(self.live_guide_btn)
+            self.live_guide_btn.style().polish(self.live_guide_btn)
+
+            if not self._busy:
+                if lg_state == "active":
+                    self._hint_lbl.setText(
+                        "Guía Live ACTIVA · Captura puntual en cada turno · Esc para ocultar"
+                    )
+                elif lg_state == "paused":
+                    self._hint_lbl.setText(
+                        "Guía Live en PAUSA · 0 capturas y 0 tokens · Esc para ocultar"
+                    )
+                else:
+                    self._hint_lbl.setText("Alt+Espacio para abrir/ocultar · Esc para ocultar")
         finally:
             self._syncing = False
 
@@ -276,6 +352,7 @@ class MiniChatWindow(QWidget):
                     parent=self._feed,
                 )
             )
+        self.sync_controls()
         self.input_edit.setFocus()
 
     def _on_turn_failed(self, err_text: str) -> None:
@@ -290,6 +367,71 @@ class MiniChatWindow(QWidget):
                 parent=self._feed,
             )
         )
+        self.sync_controls()
+
+    def _on_live_guide_state_changed(self, event: object) -> None:
+        if isinstance(event, LiveGuideStateChangedEvent):
+            self.sync_controls()
+
+    def _on_screen_captured(self, event: object) -> None:
+        if isinstance(event, ScreenCapturedEvent) and not self._busy:
+            self._hint_lbl.setText(
+                f"Captura lista ({event.width}x{event.height}) · Esc para ocultar"
+            )
+
+    def _on_quick_capture(self) -> None:
+        if self._busy or self._app.settings.general.privacy_mode:
+            return
+        prompt = self.input_edit.text().strip()
+        if prompt:
+            self.input_edit.clear()
+
+        self._busy = True
+        self.send_btn.setEnabled(False)
+        self.capture_btn.setEnabled(False)
+        self._hint_lbl.setText("Capturando y analizando pantalla...")
+
+        user_name = self._app.settings.general.user_name.strip() or "Tú"
+        bubble_text = f"📷 {prompt}" if prompt else "📷 Analizar pantalla"
+        self._append_widget(
+            ChatBubble(role="user", sender_label=user_name, content=bubble_text, parent=self._feed)
+        )
+
+        fut = self._app.capture_screen_and_analyze(prompt=prompt)
+
+        def _done(done_fut: concurrent.futures.Future[TurnResult]) -> None:
+            try:
+                res = done_fut.result()
+            except Exception as exc:
+                self._turn_failed.emit(str(exc))
+                return
+            self._turn_finished.emit(res)
+
+        fut.add_done_callback(_done)
+
+    def _on_toggle_live_guide(self) -> None:
+        state = self._app.get_live_guide_state()
+        try:
+            if state == "off":
+                self._app.start_live_guide()
+            elif state == "active":
+                self._app.pause_live_guide()
+            else:
+                self._app.resume_live_guide()
+        except PermissionError as exc:
+            self._append_widget(
+                ChatBubble(
+                    role="system",
+                    sender_label="Visión",
+                    content=str(exc),
+                    parent=self._feed,
+                )
+            )
+        self.sync_controls()
+
+    def _on_stop_live_guide(self) -> None:
+        self._app.stop_live_guide()
+        self.sync_controls()
 
     def _on_safety_requested(self, event: object) -> None:
         if not isinstance(event, SafetyConfirmationRequestedEvent):

@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Guías y Setup Sync — DeusEx v3</title>
+  <meta
+    name="description"
+    content="Guías paso a paso para configurar Gemini API Key, Bot Privado de Discord, Smart TV/Cast y DeusEx Companion APK, más Setup Sync local hacia 127.0.0.1:8888."
+  />
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="container nav-bar">
+      <a class="brand" href="./index.html">
+        <span class="brand-mark" aria-hidden="true">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+            <circle cx="12" cy="12" r="8" stroke="#38BDF8" stroke-width="2" />
+            <circle cx="12" cy="12" r="3" fill="#38BDF8" />
+          </svg>
+        </span>
+        <span>DeusEx</span>
+        <span class="brand-tag">Guías</span>
+      </a>
+
+      <button
+        type="button"
+        class="nav-toggle"
+        data-nav-toggle
+        aria-expanded="false"
+        aria-label="Abrir navegación"
+      >
+        Menú
+      </button>
+
+      <nav class="nav-links" data-nav-links aria-label="Navegación principal">
+        <a href="./index.html">Inicio</a>
+        <a href="./guides.html" class="active">Guías y Setup Sync</a>
+        <a href="./privacy.html">Privacidad</a>
+        <a href="./terms.html">Términos</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="section">
+    <div class="container">
+      <div class="section-header">
+        <span class="pill" data-state="info">Documentación práctica · Cero consola</span>
+        <h1>Guías de Configuración y Setup Sync</h1>
+        <p>
+          Todo lo necesario para activar el cerebro IA, tu bot personal de Discord, dispositivos de red
+          local y la app móvil. Ninguna clave se almacena en este sitio: Setup Sync transmite directo
+          desde tu navegador a <span class="code-inline">http://127.0.0.1:8888</span>.
+        </p>
+      </div>
+
+      <nav class="guide-nav" aria-label="Saltar a guía">
+        <a class="btn btn-sm" href="#setup-sync">Setup Sync Local</a>
+        <a class="btn btn-sm" href="#gemini">1. Gemini API Key</a>
+        <a class="btn btn-sm" href="#discord">2. Bot Privado Discord</a>
+        <a class="btn btn-sm" href="#smart-tv">3. Smart TV / Cast / Xbox</a>
+        <a class="btn btn-sm" href="#mobile">4. App Móvil APK</a>
+      </nav>
+
+      <!-- Panel interactivo Setup Sync -->
+      <section id="setup-sync" class="card card-accent guide-block" aria-labelledby="setup-sync-title">
+        <div class="inline-row" style="justify-content: space-between; margin-bottom: 0.6rem;">
+          <h2 id="setup-sync-title" style="margin: 0;">Setup Sync hacia tu DeusEx local</h2>
+          <span class="pill" data-local-status-pill>Listo para verificar</span>
+        </div>
+        <p style="color: var(--text-secondary); margin: 0;">
+          Si abriste esta página desde <strong>Integraciones → Setup Sync</strong> o desde el
+          <strong>Onboarding</strong> de DeusEx v3, tu token efímero de sesión ya viene cargado.
+          El envío se realiza exclusivamente a tu propio equipo (<span class="code-inline">127.0.0.1</span>)
+          y se guarda en <span class="code-inline">%LOCALAPPDATA%\DeusEx\.env</span>.
+        </p>
+
+        <form class="form-grid" data-setup-sync-form autocomplete="off">
+          <div class="grid-2">
+            <div class="field">
+              <label for="sync_port">Puerto local (solo 127.0.0.1)</label>
+              <input
+                id="sync_port"
+                name="sync_port"
+                type="text"
+                inputmode="numeric"
+                value="8888"
+                data-local-port-input
+                required
+              />
+              <span class="field-hint">Puerto oficial por defecto: 8888.</span>
+            </div>
+
+            <div class="field">
+              <label for="sync_token">Token efímero de sesión</label>
+              <input
+                id="sync_token"
+                name="sync_token"
+                type="password"
+                placeholder="Generado por DeusEx al abrir Setup Sync"
+                required
+              />
+              <span class="field-hint">Protege tu endpoint local contra peticiones de otros sitios.</span>
+            </div>
+          </div>
+
+          <div class="grid-2">
+            <div class="field">
+              <label for="gemini_api_key">GEMINI_API_KEY (opcional)</label>
+              <input
+                id="gemini_api_key"
+                name="gemini_api_key"
+                type="password"
+                placeholder="AIzaSy..."
+              />
+            </div>
+
+            <div class="field">
+              <label for="discord_bot_token">DISCORD_BOT_TOKEN (opcional)</label>
+              <input
+                id="discord_bot_token"
+                name="discord_bot_token"
+                type="password"
+                placeholder="Token de tu bot privado de Discord"
+              />
+            </div>
+          </div>
+
+          <div class="inline-row">
+            <button type="submit" class="btn btn-primary">Enviar a DeusEx local</button>
+            <button type="button" class="btn" data-check-local-btn>Probar conexión 127.0.0.1</button>
+          </div>
+
+          <div class="callout" data-setup-sync-status hidden role="status" aria-live="polite"></div>
+        </form>
+      </section>
+
+      <!-- Guía 1: Gemini API Key -->
+      <article id="gemini" class="card guide-block">
+        <div class="guide-layout">
+          <div>
+            <span class="pill" data-state="ok">Paso 1 · Recomendado</span>
+            <h2 style="margin: 0.6rem 0 0.4rem;">Obtener tu Gemini API Key gratuita</h2>
+            <p>
+              DeusEx v3 utiliza Google Gemini como cerebro principal (chat, visión multi-monitor y
+              resumen de notas de voz). Puedes crear una clave gratuita en menos de 2 minutos:
+            </p>
+            <ol class="step-list">
+              <li>
+                Ingresa a
+                <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer">
+                  Google AI Studio (API Keys)
+                </a>
+                con tu cuenta de Google.
+              </li>
+              <li>Haz clic en <strong>Create API key</strong> y selecciona un proyecto nuevo o existente.</li>
+              <li>Copia la clave generada (comienza con <span class="code-inline">AIza</span>).</li>
+              <li>
+                Pégala en el formulario <strong>Setup Sync</strong> arriba o simplemente mantenla en tu
+                portapapeles: el <em>Smart Clipboard Catcher</em> de DeusEx la detectará al abrir el Onboarding.
+              </li>
+            </ol>
+          </div>
+
+          <div class="diagram-box" aria-label="Diagrama de flujo Gemini API Key local">
+            <svg viewBox="0 0 360 190" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect x="12" y="20" width="106" height="58" rx="10" fill="#182133" stroke="#38BDF8" />
+              <text x="65" y="45" fill="#F1F5F9" font-size="11" font-weight="600" text-anchor="middle">Google AI Studio</text>
+              <text x="65" y="62" fill="#94A3B8" font-size="9.5" text-anchor="middle">Crea clave AIza...</text>
+
+              <path d="M118 49H156" stroke="#38BDF8" stroke-width="2" />
+              <polygon points="156,44 166,49 156,54" fill="#38BDF8" />
+
+              <rect x="168" y="20" width="180" height="58" rx="10" fill="#182133" stroke="#818CF8" />
+              <text x="258" y="45" fill="#F1F5F9" font-size="11" font-weight="600" text-anchor="middle">Setup Sync / Portapapeles</text>
+              <text x="258" y="62" fill="#94A3B8" font-size="9.5" text-anchor="middle">POST 127.0.0.1:8888 (local)</text>
+
+              <path d="M258 78V112" stroke="#10B981" stroke-width="2" />
+              <polygon points="253,112 258,122 263,112" fill="#10B981" />
+
+              <rect x="38" y="124" width="284" height="50" rx="10" fill="#0F172A" stroke="#10B981" />
+              <text x="180" y="146" fill="#6EE7B7" font-size="11" font-weight="600" text-anchor="middle">%LOCALAPPDATA%\DeusEx\.env</text>
+              <text x="180" y="163" fill="#94A3B8" font-size="9.5" text-anchor="middle">Guardado atómico en tu PC · Cero servidores intermedios</text>
+            </svg>
+            <div class="diagram-caption">Tu clave jamás sale de tu equipo salvo en llamadas directas a Gemini.</div>
+          </div>
+        </div>
+      </article>
+
+      <!-- Guía 2: Bot Privado de Discord -->
+      <article id="discord" class="card guide-block">
+        <div class="guide-layout">
+          <div>
+            <span class="pill" data-state="info">Paso 2 · 1 Bot por Usuario</span>
+            <h2 style="margin: 0.6rem 0 0.4rem;">Crear tu Bot Privado de Discord</h2>
+            <p>
+              Para evitar choques entre computadoras y proteger el control remoto del PC, cada usuario
+              usa su propio bot privado en Discord (compatible con audio DAVE E2EE):
+            </p>
+            <ol class="step-list">
+              <li>
+                Abre el
+                <a href="https://discord.com/developers/applications" target="_blank" rel="noopener noreferrer">
+                  Discord Developer Portal
+                </a>
+                y pulsa <strong>New Application</strong> (ej. <span class="code-inline">DeusEx Personal</span>).
+              </li>
+              <li>En el menú lateral <strong>Bot</strong>, pulsa <strong>Reset Token</strong> y guarda el token generado.</li>
+              <li>
+                Activa el interruptor <strong>Message Content Intent</strong> en <em>Privileged Gateway Intents</em>
+                para habilitar comandos (<span class="code-inline">!play</span>, <span class="code-inline">!shuffle</span>,
+                <span class="code-inline">!aprobar</span>).
+              </li>
+              <li>
+                Envía el token mediante <strong>Setup Sync</strong> arriba o pégalo en <strong>Integraciones → Discord</strong>.
+                DeusEx generará automáticamente tu enlace de invitación 1-clic con los permisos exactos.
+              </li>
+            </ol>
+          </div>
+
+          <div class="diagram-box" aria-label="Diagrama de bot privado de Discord">
+            <svg viewBox="0 0 360 190" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect x="18" y="20" width="324" height="44" rx="10" fill="#182133" stroke="#818CF8" />
+              <text x="180" y="40" fill="#F1F5F9" font-size="11" font-weight="600" text-anchor="middle">Discord Developer Portal</text>
+              <text x="180" y="55" fill="#94A3B8" font-size="9.5" text-anchor="middle">Bot Token + Message Content Intent ON</text>
+
+              <path d="M180 64V88" stroke="#38BDF8" stroke-width="2" />
+              <polygon points="175,88 180,96 185,88" fill="#38BDF8" />
+
+              <rect x="18" y="98" width="150" height="72" rx="10" fill="#0F172A" stroke="#38BDF8" />
+              <text x="93" y="122" fill="#7DD3FC" font-size="10.5" font-weight="600" text-anchor="middle">discord_chat</text>
+              <text x="93" y="139" fill="#94A3B8" font-size="9" text-anchor="middle">Avisos y SafetyGate</text>
+              <text x="93" y="154" fill="#94A3B8" font-size="9" text-anchor="middle">!aprobar / !rechazar</text>
+
+              <rect x="192" y="98" width="150" height="72" rx="10" fill="#0F172A" stroke="#10B981" />
+              <text x="267" y="122" fill="#6EE7B7" font-size="10.5" font-weight="600" text-anchor="middle">discord_music</text>
+              <text x="267" y="139" fill="#94A3B8" font-size="9" text-anchor="middle">Voz DAVE E2EE + RMS</text>
+              <text x="267" y="154" fill="#94A3B8" font-size="9" text-anchor="middle">!play / !shuffle manual</text>
+            </svg>
+            <div class="diagram-caption">Un único gateway compartido controla chat remoto y voz de forma independiente.</div>
+          </div>
+        </div>
+      </article>
+
+      <!-- Guía 3: Smart TV, Cast y Xbox -->
+      <article id="smart-tv" class="card guide-block">
+        <div class="guide-layout">
+          <div>
+            <span class="pill" data-state="info">Paso 3 · Red Local LAN</span>
+            <h2 style="margin: 0.6rem 0 0.4rem;">Conectar Smart TV, Chromecast, Miracast y Xbox</h2>
+            <p>
+              DeusEx descubre automáticamente dispositivos en tu red doméstica combinando mDNS/SSDP y
+              sondeo rápido ARP/TCP sin pedirte IPs fijas:
+            </p>
+            <ol class="step-list">
+              <li>Asegúrate de que tu PC y tu televisor/Chromecast estén en la <strong>misma red local</strong> (perfil de red <em>Privada</em> en Windows 11).</li>
+              <li>En <strong>Samsung Tizen TV</strong>, acepta el aviso de permiso en pantalla la primera vez que DeusEx envíe un comando (el token se guarda localmente en <span class="code-inline">.env</span>).</li>
+              <li>Para encender por voz (<strong>Wake-on-LAN</strong>), activa <em>Encendido con móvil / red</em> en los ajustes de red del televisor.</li>
+              <li>En <strong>Integraciones → Red Local</strong>, pulsa <strong>Escanear red</strong>, asigna un alias amigable (ej. <em>TV Sala</em>) y márcalo como favorito.</li>
+            </ol>
+          </div>
+
+          <div class="diagram-box" aria-label="Diagrama de descubrimiento híbrido LAN">
+            <svg viewBox="0 0 360 190" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect x="115" y="16" width="130" height="44" rx="10" fill="#182133" stroke="#38BDF8" />
+              <text x="180" y="36" fill="#F1F5F9" font-size="11" font-weight="600" text-anchor="middle">PC Windows 11</text>
+              <text x="180" y="51" fill="#94A3B8" font-size="9" text-anchor="middle">mDNS + SSDP + ARP/WoL</text>
+
+              <path d="M140 60L62 112M180 60V112M220 60L298 112" stroke="#38BDF8" stroke-width="1.8" />
+
+              <rect x="14" y="114" width="96" height="58" rx="10" fill="#0F172A" stroke="#818CF8" />
+              <text x="62" y="139" fill="#F1F5F9" font-size="10" font-weight="600" text-anchor="middle">Samsung TV</text>
+              <text x="62" y="155" fill="#94A3B8" font-size="8.8" text-anchor="middle">WS + WoL + YT</text>
+
+              <rect x="132" y="114" width="96" height="58" rx="10" fill="#0F172A" stroke="#10B981" />
+              <text x="180" y="139" fill="#F1F5F9" font-size="10" font-weight="600" text-anchor="middle">Chromecast</text>
+              <text x="180" y="155" fill="#94A3B8" font-size="8.8" text-anchor="middle">Cast + Volumen</text>
+
+              <rect x="250" y="114" width="96" height="58" rx="10" fill="#0F172A" stroke="#F59E0B" />
+              <text x="298" y="139" fill="#F1F5F9" font-size="10" font-weight="600" text-anchor="middle">Xbox / Miracast</text>
+              <text x="298" y="155" fill="#94A3B8" font-size="8.8" text-anchor="middle">UDP 5050 / Win+K</text>
+            </svg>
+            <div class="diagram-caption">Aliases persistidos en SQLite local; tokens aislados en .env.</div>
+          </div>
+        </div>
+      </article>
+
+      <!-- Guía 4: App Móvil Companion APK -->
+      <article id="mobile" class="card guide-block">
+        <div class="guide-layout">
+          <div>
+            <span class="pill" data-state="ok">Paso 4 · Cero ADB · Android 10+</span>
+            <h2 style="margin: 0.6rem 0 0.4rem;">Instalar DeusEx Companion (.apk) y Smartwatch</h2>
+            <p>
+              Vincula tu smartphone Android sin cables, sin activar Opciones de Desarrollador y sin
+              afectar tus aplicaciones bancarias:
+            </p>
+            <ol class="step-list">
+              <li>Descarga <strong>DeusEx Companion.apk</strong> desde la sección de GitHub Releases e instálalo en tu teléfono.</li>
+              <li>En tu PC, abre <strong>Integraciones → DeusEx Companion</strong> y pulsa <strong>Generar QR móvil</strong>.</li>
+              <li>Escanea el código QR desde la app estando en la misma red Wi-Fi (puerto WebSocket local <span class="code-inline">8765</span>).</li>
+              <li>
+                Para leer pasos, pulso y sueño de tu reloj inteligente, concede permisos de lectura en
+                <strong>Health Connect</strong>. Cuando salgas de casa, la app cambia automáticamente a
+                <em>Mini-DeusEx local</em> en datos móviles.
+              </li>
+            </ol>
+          </div>
+
+          <div class="diagram-box" aria-label="Diagrama de emparejamiento QR móvil sin ADB">
+            <svg viewBox="0 0 360 190" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect x="16" y="24" width="110" height="140" rx="12" fill="#182133" stroke="#38BDF8" />
+              <text x="71" y="50" fill="#F1F5F9" font-size="10.5" font-weight="600" text-anchor="middle">PC DeusEx v3</text>
+              <rect x="44" y="64" width="54" height="54" rx="6" fill="#0B0F17" stroke="#38BDF8" stroke-dasharray="4 3" />
+              <text x="71" y="95" fill="#7DD3FC" font-size="10" font-weight="600" text-anchor="middle">QR</text>
+              <text x="71" y="142" fill="#94A3B8" font-size="8.8" text-anchor="middle">WS LAN :8765</text>
+
+              <path d="M126 94H168" stroke="#10B981" stroke-width="2" />
+              <polygon points="168,89 178,94 168,99" fill="#10B981" />
+
+              <rect x="180" y="24" width="164" height="64" rx="12" fill="#0F172A" stroke="#10B981" />
+              <text x="262" y="50" fill="#6EE7B7" font-size="10.5" font-weight="600" text-anchor="middle">Companion.apk (Cero ADB)</text>
+              <text x="262" y="68" fill="#94A3B8" font-size="9" text-anchor="middle">Capturas · SafetyGate · Remoto</text>
+
+              <path d="M262 88V108" stroke="#818CF8" stroke-width="1.8" />
+              <rect x="180" y="110" width="164" height="54" rx="12" fill="#0F172A" stroke="#818CF8" />
+              <text x="262" y="134" fill="#C7D2FE" font-size="10" font-weight="600" text-anchor="middle">Health Connect + Reloj</text>
+              <text x="262" y="150" fill="#94A3B8" font-size="8.8" text-anchor="middle">Pasos, pulso y alertas rápidas</text>
+            </svg>
+            <div class="diagram-caption">Emparejamiento por token cifrado en Wi-Fi local sin depuración USB/ADB.</div>
+          </div>
+        </div>
+      </article>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-row">
+      <div>DeusEx v3 · Portal de Guías y Setup Sync local.</div>
+      <div class="footer-links">
+        <a href="./index.html">Inicio</a>
+        <a href="./privacy.html">Privacidad</a>
+        <a href="./terms.html">Términos</a>
+      </div>
+    </div>
+  </footer>
+
+  <script src="./app.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Política de Privacidad — DeusEx v3</title>
+  <meta
+    name="description"
+    content="Política de privacidad local-first de DeusEx v3 y cumplimiento estricto de Google API Services User Data Policy (Limited Use)."
+  />
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="container nav-bar">
+      <a class="brand" href="./index.html">
+        <span class="brand-mark" aria-hidden="true">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+            <circle cx="12" cy="12" r="8" stroke="#38BDF8" stroke-width="2" />
+            <circle cx="12" cy="12" r="3" fill="#38BDF8" />
+          </svg>
+        </span>
+        <span>DeusEx</span>
+        <span class="brand-tag">Privacidad</span>
+      </a>
+
+      <button
+        type="button"
+        class="nav-toggle"
+        data-nav-toggle
+        aria-expanded="false"
+        aria-label="Abrir navegación"
+      >
+        Menú
+      </button>
+
+      <nav class="nav-links" data-nav-links aria-label="Navegación principal">
+        <a href="./index.html">Inicio</a>
+        <a href="./guides.html">Guías y Setup Sync</a>
+        <a href="./privacy.html" class="active">Privacidad</a>
+        <a href="./terms.html">Términos</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="section">
+    <div class="container">
+      <article class="card legal-article">
+        <span class="pill" data-state="ok">100% Local-First · Cero servidores centrales</span>
+        <h1>Política de Privacidad de DeusEx v3</h1>
+        <p>
+          <strong>Última actualización:</strong> noviembre de 2026 · <strong>Versión aplicable:</strong> DeusEx v3.0.0
+        </p>
+
+        <div class="callout" data-type="ok" style="margin: 1.2rem 0;">
+          <strong>Resumen ejecutivo:</strong> DeusEx v3 se ejecuta íntegramente en tu equipo Windows 11.
+          No operamos servidores propios que recolecten, almacenen o vendan tus conversaciones, archivos,
+          correos, credenciales ni telemetría. Este portal web es un sitio estático informativo y puente
+          OAuth/Setup Sync que solo se comunica con tu propio equipo en
+          <span class="code-inline">http://127.0.0.1:8888</span>.
+        </div>
+
+        <h2>1. Arquitectura Local-First y Almacenamiento de Datos</h2>
+        <p>
+          Todos los datos generados o configurados por el usuario se almacenan exclusivamente en el
+          directorio local <span class="code-inline">%LOCALAPPDATA%\DeusEx\</span>:
+        </p>
+        <ul>
+          <li>
+            <strong>Configuración general (<span class="code-inline">settings.json</span>):</strong>
+            preferencias de interfaz, tema, perfiles, permisos y módulos activos. Nunca guarda contraseñas,
+            claves API ni tokens OAuth.
+          </li>
+          <li>
+            <strong>Base de datos local (<span class="code-inline">deusex.db</span>):</strong>
+            historial de chat, memoria adaptativa, temporizadores, rutinas y auditoría de acciones en SQLite WAL.
+          </li>
+          <li>
+            <strong>Secretos aislados (<span class="code-inline">.env</span> y <span class="code-inline">secrets/</span>):</strong>
+            las claves API proporcionadas por el usuario (por ejemplo, Gemini o Discord) se escriben de
+            forma atómica en <span class="code-inline">.env</span>, y los tokens OAuth 2.0 PKCE se guardan
+            exclusivamente en <span class="code-inline">secrets/</span>. Ambos se excluyen automáticamente de
+            respaldos <span class="code-inline">.zip</span>, logs de diagnóstico y repositorios Git.
+          </li>
+        </ul>
+
+        <h2>2. Google API Services User Data Policy — Limited Use Disclosure</h2>
+        <div class="callout" data-type="info" style="margin: 0.9rem 0;">
+          <p style="margin: 0 0 0.65rem; color: var(--text-primary);">
+            <strong>Google API Services User Data Policy (Limited Use):</strong>
+            DeusEx v3's use and transfer to any other app of information received from Google APIs will
+            adhere to the
+            <a
+              href="https://developers.google.com/terms/api-services-user-data-policy"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Google API Services User Data Policy
+            </a>,
+            including the <strong>Limited Use</strong> requirements.
+          </p>
+          <p style="margin: 0;">
+            En particular, cuando conectas voluntariamente tu cuenta de Google mediante OAuth 2.0 PKCE:
+          </p>
+        </div>
+        <ul>
+          <li>
+            <strong>Uso estrictamente acotado al usuario:</strong> los datos de Google Workspace (Gmail,
+            Google Calendar, Google Tasks, Google Drive, Google Docs) y YouTube Music se consultan o
+            modifican únicamente para ejecutar acciones solicitadas explícitamente por ti dentro de DeusEx v3.
+          </li>
+          <li>
+            <strong>Cero transferencia a servidores de terceros no autorizados:</strong> los tokens de acceso
+            y refresco permanecen exclusivamente en <span class="code-inline">%LOCALAPPDATA%\DeusEx\secrets\google_oauth.json</span>.
+            No se venden, alquilan ni comparten con anunciantes, intermediarios ni servidores de DeusEx.
+          </li>
+          <li>
+            <strong>Prohibición de entrenamiento de IA generalizada:</strong> los datos obtenidos desde las APIs
+            de Google Workspace jamás se utilizan para entrenar modelos generalizados de inteligencia artificial
+            ni aprendizaje automático.
+          </li>
+          <li>
+            <strong>Freno físico de acciones sensibles (<span class="code-inline">SafetyGate</span>):</strong>
+            acciones críticas como enviar correos o eliminar eventos/tareas requieren tu confirmación explícita
+            en pantalla antes de ejecutarse.
+          </li>
+        </ul>
+
+        <h2>3. Integraciones y Proveedores Externos Elegidos por el Usuario</h2>
+        <p>
+          Cuando activas de forma voluntaria un módulo o proveedor, DeusEx v3 realiza conexiones directas
+          desde tu PC hacia el servicio correspondiente (sin pasar por servidores de DeusEx):
+        </p>
+        <ul>
+          <li>
+            <strong>Proveedores de IA (Gemini u otros configurados por ti):</strong> reciben solo el texto,
+            audio o captura puntual que tú envías para responder a tu solicitud. En <strong>Modo Privacidad</strong>
+            (<span class="code-inline">Ctrl+Shift+P</span>), la memoria adaptativa, el portapapeles y la
+            Guía Live quedan congelados.
+          </li>
+          <li>
+            <strong>Servicios de clima, noticias y búsqueda:</strong> las consultas de clima usan Open-Meteo
+            (tier gratuito sin clave) y las noticias usan fuentes RSS públicas.
+          </li>
+          <li>
+            <strong>Spotify, TIDAL, Discord, WhatsApp y Red Local:</strong> los módulos inician desactivados
+            por defecto (arquitectura Zero-Base) y se comunican únicamente con sus APIs oficiales o dispositivos
+            en tu propia red doméstica.
+          </li>
+        </ul>
+
+        <h2>4. Seguridad del Portal Web (Callback OAuth y Setup Sync)</h2>
+        <p>
+          Este portal alojado en GitHub Pages es 100% estático (HTML, CSS y JavaScript del lado del cliente).
+          No instala cookies de rastreo ni analítica de terceros. El puente
+          <span class="code-inline">callback.html</span> valida el parámetro anti-CSRF
+          <span class="code-inline">state</span> y aplica una lista blanca estricta que solo permite reenviar
+          códigos OAuth PKCE y envíos Setup Sync hacia <span class="code-inline">http://127.0.0.1:&lt;puerto&gt;</span>,
+          bloqueando cualquier intento de redirección hacia dominios externos (protección anti Open-Redirect).
+        </p>
+
+        <h2>5. Control, Revocación y Eliminación de Datos</h2>
+        <ul>
+          <li>
+            <strong>Desconexión inmediata:</strong> puedes desvincular tu cuenta de Google en 1 clic desde
+            <strong>Integraciones</strong> dentro de DeusEx v3, lo que elimina inmediatamente
+            <span class="code-inline">secrets/google_oauth.json</span> de tu equipo.
+          </li>
+          <li>
+            <strong>Revocación en Google:</strong> también puedes revocar el acceso en cualquier momento desde
+            <a href="https://myaccount.google.com/permissions" target="_blank" rel="noopener noreferrer">
+              Permisos de tu Cuenta de Google
+            </a>.
+          </li>
+          <li>
+            <strong>Eliminación total:</strong> borrar la carpeta
+            <span class="code-inline">%LOCALAPPDATA%\DeusEx\</span> elimina de forma permanente el historial,
+            memorias, configuraciones y credenciales locales.
+          </li>
+        </ul>
+      </article>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-row">
+      <div>DeusEx v3 · Política de Privacidad Local-First.</div>
+      <div class="footer-links">
+        <a href="./index.html">Inicio</a>
+        <a href="./guides.html">Guías</a>
+        <a href="./terms.html">Términos</a>
+      </div>
+    </div>
+  </footer>
+
+  <script src="./app.js" defer></script>
+</body>
+</html>

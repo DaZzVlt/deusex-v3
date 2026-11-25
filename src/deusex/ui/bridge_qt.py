@@ -16,19 +16,26 @@ from deusex.core.events import (
     FastPathExecutedEvent,
     HotkeyTriggeredEvent,
     InCallStateChangedEvent,
+    LiveGuideStateChangedEvent,
     MemorySavedEvent,
     MicLevelEvent,
     MicMuteChangedEvent,
     ModuleStateChangedEvent,
+    OAuthCompletedEvent,
+    OAuthErrorEvent,
     OrbStateChangedEvent,
     PrivacyModeChangedEvent,
     ProfileChangedEvent,
+    ResearchExportRequestedEvent,
     SafetyConfirmationRequestedEvent,
     SafetyConfirmationResolvedEvent,
     ScheduledJobFiredEvent,
     ScheduledJobsUpdatedEvent,
+    ScreenCapturedEvent,
     SettingsUpdatedEvent,
+    SetupSyncReceivedEvent,
     SubtitleUpdatedEvent,
+    VisionShareRequestedEvent,
     VoiceCalibrationEvent,
     VoiceMuteChangedEvent,
     WakeWordDetectedEvent,
@@ -67,6 +74,13 @@ class QtEventBridge(QObject):
     subtitle_updated = Signal(object)
     wake_word_detected = Signal(str, str)
     voice_calibration_updated = Signal(object)
+    research_export_requested = Signal(object)
+    screen_captured = Signal(object)
+    live_guide_state_changed = Signal(object)
+    vision_share_requested = Signal(object)
+    oauth_completed = Signal(object)
+    oauth_error = Signal(object)
+    setup_sync_received = Signal(object)
 
     def __init__(self, events: EventBus, parent: QObject | None = None) -> None:
         super().__init__(parent)
@@ -191,6 +205,34 @@ class QtEventBridge(QObject):
             self._events.subscribe(
                 VoiceCalibrationEvent,
                 lambda e: self._safe_emit(lambda: self.voice_calibration_updated.emit(e)),
+            ),
+            self._events.subscribe(
+                ResearchExportRequestedEvent,
+                lambda e: self._safe_emit(lambda: self.research_export_requested.emit(e)),
+            ),
+            self._events.subscribe(
+                ScreenCapturedEvent,
+                lambda e: self._safe_emit(lambda: self.screen_captured.emit(e)),
+            ),
+            self._events.subscribe(
+                LiveGuideStateChangedEvent,
+                lambda e: self._safe_emit(lambda: self.live_guide_state_changed.emit(e)),
+            ),
+            self._events.subscribe(
+                VisionShareRequestedEvent,
+                lambda e: self._safe_emit(lambda: self.vision_share_requested.emit(e)),
+            ),
+            self._events.subscribe(
+                OAuthCompletedEvent,
+                lambda e: self._safe_emit(lambda: self.oauth_completed.emit(e)),
+            ),
+            self._events.subscribe(
+                OAuthErrorEvent,
+                lambda e: self._safe_emit(lambda: self.oauth_error.emit(e)),
+            ),
+            self._events.subscribe(
+                SetupSyncReceivedEvent,
+                lambda e: self._safe_emit(lambda: self.setup_sync_received.emit(e)),
             ),
         ]
 
