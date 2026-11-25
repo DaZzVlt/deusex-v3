@@ -46,138 +46,152 @@
   <main class="section">
     <div class="container">
       <article class="card legal-article">
-        <span class="pill" data-state="ok">100% Local-First · Cero servidores centrales</span>
-        <h1>Política de Privacidad de DeusEx v3</h1>
-        <p>
-          <strong>Última actualización:</strong> noviembre de 2026 · <strong>Versión aplicable:</strong> DeusEx v3.0.0
-        </p>
-
-        <div class="callout" data-type="ok" style="margin: 1.2rem 0;">
-          <strong>Resumen ejecutivo:</strong> DeusEx v3 se ejecuta íntegramente en tu equipo Windows 11.
-          No operamos servidores propios que recolecten, almacenen o vendan tus conversaciones, archivos,
-          correos, credenciales ni telemetría. Este portal web es un sitio estático informativo y puente
-          OAuth/Setup Sync que solo se comunica con tu propio equipo en
-          <span class="code-inline">http://127.0.0.1:8888</span>.
-        </div>
-
-        <h2>1. Arquitectura Local-First y Almacenamiento de Datos</h2>
-        <p>
-          Todos los datos generados o configurados por el usuario se almacenan exclusivamente en el
-          directorio local <span class="code-inline">%LOCALAPPDATA%\DeusEx\</span>:
-        </p>
-        <ul>
-          <li>
-            <strong>Configuración general (<span class="code-inline">settings.json</span>):</strong>
-            preferencias de interfaz, tema, perfiles, permisos y módulos activos. Nunca guarda contraseñas,
-            claves API ni tokens OAuth.
-          </li>
-          <li>
-            <strong>Base de datos local (<span class="code-inline">deusex.db</span>):</strong>
-            historial de chat, memoria adaptativa, temporizadores, rutinas y auditoría de acciones en SQLite WAL.
-          </li>
-          <li>
-            <strong>Secretos aislados (<span class="code-inline">.env</span> y <span class="code-inline">secrets/</span>):</strong>
-            las claves API proporcionadas por el usuario (por ejemplo, Gemini o Discord) se escriben de
-            forma atómica en <span class="code-inline">.env</span>, y los tokens OAuth 2.0 PKCE se guardan
-            exclusivamente en <span class="code-inline">secrets/</span>. Ambos se excluyen automáticamente de
-            respaldos <span class="code-inline">.zip</span>, logs de diagnóstico y repositorios Git.
-          </li>
-        </ul>
-
-        <h2>2. Google API Services User Data Policy — Limited Use Disclosure</h2>
-        <div class="callout" data-type="info" style="margin: 0.9rem 0;">
-          <p style="margin: 0 0 0.65rem; color: var(--text-primary);">
-            <strong>Google API Services User Data Policy (Limited Use):</strong>
-            DeusEx v3's use and transfer to any other app of information received from Google APIs will
-            adhere to the
-            <a
-              href="https://developers.google.com/terms/api-services-user-data-policy"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Google API Services User Data Policy
-            </a>,
-            including the <strong>Limited Use</strong> requirements.
+        <section class="legal-section">
+          <span class="pill" data-state="ok">100% Local-First · Cero servidores centrales</span>
+          <h1>Política de Privacidad — DeusEx v3</h1>
+          <p>
+            <strong>Última actualización:</strong> 25 de noviembre de 2026 ·
+            <strong>Versión aplicable:</strong> DeusEx v3.0.0
           </p>
-          <p style="margin: 0;">
-            En particular, cuando conectas voluntariamente tu cuenta de Google mediante OAuth 2.0 PKCE:
+          <p>
+            <strong>DeusEx v3</strong> es un asistente personal de escritorio para Windows 11 con arquitectura
+            <strong>100 % Local-First</strong>. La aplicación se ejecuta directamente en el computador del usuario
+            y <strong>no opera ningún servidor central propio</strong> que reciba, almacene o procese tus correos,
+            calendarios, tareas, archivos o credenciales. Este portal web estático solo actúa como documentación
+            y puente local hacia <span class="code-inline">http://127.0.0.1:8888</span>.
           </p>
-        </div>
-        <ul>
-          <li>
-            <strong>Uso estrictamente acotado al usuario:</strong> los datos de Google Workspace (Gmail,
-            Google Calendar, Google Tasks, Google Drive, Google Docs) y YouTube Music se consultan o
-            modifican únicamente para ejecutar acciones solicitadas explícitamente por ti dentro de DeusEx v3.
-          </li>
-          <li>
-            <strong>Cero transferencia a servidores de terceros no autorizados:</strong> los tokens de acceso
-            y refresco permanecen exclusivamente en <span class="code-inline">%LOCALAPPDATA%\DeusEx\secrets\google_oauth.json</span>.
-            No se venden, alquilan ni comparten con anunciantes, intermediarios ni servidores de DeusEx.
-          </li>
-          <li>
-            <strong>Prohibición de entrenamiento de IA generalizada:</strong> los datos obtenidos desde las APIs
-            de Google Workspace jamás se utilizan para entrenar modelos generalizados de inteligencia artificial
-            ni aprendizaje automático.
-          </li>
-          <li>
-            <strong>Freno físico de acciones sensibles (<span class="code-inline">SafetyGate</span>):</strong>
-            acciones críticas como enviar correos o eliminar eventos/tareas requieren tu confirmación explícita
-            en pantalla antes de ejecutarse.
-          </li>
-        </ul>
 
-        <h2>3. Integraciones y Proveedores Externos Elegidos por el Usuario</h2>
-        <p>
-          Cuando activas de forma voluntaria un módulo o proveedor, DeusEx v3 realiza conexiones directas
-          desde tu PC hacia el servicio correspondiente (sin pasar por servidores de DeusEx):
-        </p>
-        <ul>
-          <li>
-            <strong>Proveedores de IA (Gemini u otros configurados por ti):</strong> reciben solo el texto,
-            audio o captura puntual que tú envías para responder a tu solicitud. En <strong>Modo Privacidad</strong>
-            (<span class="code-inline">Ctrl+Shift+P</span>), la memoria adaptativa, el portapapeles y la
-            Guía Live quedan congelados.
-          </li>
-          <li>
-            <strong>Servicios de clima, noticias y búsqueda:</strong> las consultas de clima usan Open-Meteo
-            (tier gratuito sin clave) y las noticias usan fuentes RSS públicas.
-          </li>
-          <li>
-            <strong>Spotify, TIDAL, Discord, WhatsApp y Red Local:</strong> los módulos inician desactivados
-            por defecto (arquitectura Zero-Base) y se comunican únicamente con sus APIs oficiales o dispositivos
-            en tu propia red doméstica.
-          </li>
-        </ul>
+          <h2>1. Datos a los que accede DeusEx v3 y cómo se utilizan</h2>
+          <p>
+            El acceso a cuentas externas es completamente opcional y solo se activa cuando el usuario inicia
+            sesión explícitamente mediante OAuth 2.0 PKCE desde la sección de Integraciones de la aplicación.
+          </p>
 
-        <h2>4. Seguridad del Portal Web (Callback OAuth y Setup Sync)</h2>
-        <p>
-          Este portal alojado en GitHub Pages es 100% estático (HTML, CSS y JavaScript del lado del cliente).
-          No instala cookies de rastreo ni analítica de terceros. El puente
-          <span class="code-inline">callback.html</span> valida el parámetro anti-CSRF
-          <span class="code-inline">state</span> y aplica una lista blanca estricta que solo permite reenviar
-          códigos OAuth PKCE y envíos Setup Sync hacia <span class="code-inline">http://127.0.0.1:&lt;puerto&gt;</span>,
-          bloqueando cualquier intento de redirección hacia dominios externos (protección anti Open-Redirect).
-        </p>
+          <h3>1.1 Google Workspace y YouTube Music (Google APIs)</h3>
+          <ul>
+            <li>
+              <strong>Perfil básico (<span class="code-inline">openid</span>, <span class="code-inline">email</span>, <span class="code-inline">profile</span>):</strong>
+              Mostrar qué cuenta de Google está vinculada dentro de la interfaz local de DeusEx v3.
+            </li>
+            <li>
+              <strong>Gmail lectura (<span class="code-inline">gmail.readonly</span>):</strong>
+              Leer, buscar y resumir correos no leídos únicamente cuando el usuario lo solicita por texto o voz.
+            </li>
+            <li>
+              <strong>Gmail redacción y envío (<span class="code-inline">gmail.compose</span>):</strong>
+              Crear borradores solicitados por el usuario y enviar correos electrónicos solo después de una
+              confirmación física explícita acción por acción en el panel de seguridad local (<span class="code-inline">SafetyGate</span>).
+            </li>
+            <li>
+              <strong>Google Calendar (<span class="code-inline">calendar</span>):</strong>
+              Consultar la agenda diaria y crear, modificar o eliminar eventos bajo instrucción directa del usuario
+              (el borrado requiere confirmación en <span class="code-inline">SafetyGate</span>).
+            </li>
+            <li>
+              <strong>Google Tasks (<span class="code-inline">tasks</span>):</strong>
+              Listar, crear, completar, actualizar o eliminar tareas personales bajo solicitud del usuario
+              (el borrado requiere confirmación en <span class="code-inline">SafetyGate</span>).
+            </li>
+            <li>
+              <strong>Google Drive y Google Docs (<span class="code-inline">drive.file</span>):</strong>
+              Buscar y descargar archivos accesibles por la aplicación y crear documentos de Google Docs a partir
+              de investigaciones o notas generadas localmente.
+            </li>
+            <li>
+              <strong>YouTube Data API (<span class="code-inline">youtube.readonly</span>):</strong>
+              Acceso estrictamente de solo lectura para listar las playlists de YouTube Music del usuario y
+              reproducir pistas localmente.
+            </li>
+          </ul>
 
-        <h2>5. Control, Revocación y Eliminación de Datos</h2>
-        <ul>
-          <li>
-            <strong>Desconexión inmediata:</strong> puedes desvincular tu cuenta de Google en 1 clic desde
-            <strong>Integraciones</strong> dentro de DeusEx v3, lo que elimina inmediatamente
-            <span class="code-inline">secrets/google_oauth.json</span> de tu equipo.
-          </li>
-          <li>
-            <strong>Revocación en Google:</strong> también puedes revocar el acceso en cualquier momento desde
-            <a href="https://myaccount.google.com/permissions" target="_blank" rel="noopener noreferrer">
-              Permisos de tu Cuenta de Google
-            </a>.
-          </li>
-          <li>
-            <strong>Eliminación total:</strong> borrar la carpeta
-            <span class="code-inline">%LOCALAPPDATA%\DeusEx\</span> elimina de forma permanente el historial,
-            memorias, configuraciones y credenciales locales.
-          </li>
-        </ul>
+          <h3>1.2 Otros servicios opcionales (Spotify y TIDAL)</h3>
+          <ul>
+            <li>
+              <strong>Spotify (OAuth 2.0 PKCE):</strong>
+              Control de reproducción, consulta de pista activa, lectura de playlists privadas y Canciones que te gustan.
+            </li>
+            <li>
+              <strong>TIDAL (OAuth 2.0 PKCE):</strong>
+              Lectura de perfil básico y playlists para búsqueda y reproducción local.
+            </li>
+          </ul>
+
+          <h2>2. Almacenamiento local y seguridad de credenciales</h2>
+          <p>
+            Todos los tokens OAuth (<span class="code-inline">secrets/google_oauth.json</span>), claves API
+            (<span class="code-inline">.env</span>), preferencias (<span class="code-inline">settings.json</span>),
+            memoria adaptativa y registros (<span class="code-inline">deusex.db</span>) permanecen exclusivamente
+            en el equipo del usuario bajo la carpeta local de datos de la aplicación
+            (<span class="code-inline">%LOCALAPPDATA%\DeusEx\</span>), y se excluyen automáticamente de respaldos
+            <span class="code-inline">.zip</span> y diagnósticos. El flujo OAuth 2.0 PKCE utiliza un servidor
+            temporal limitado estrictamente a la interfaz local <span class="code-inline">127.0.0.1</span> con
+            validación anti-CSRF (<span class="code-inline">state</span>) y protección anti Open-Redirect que se
+            apaga al cerrar la aplicación.
+          </p>
+
+          <h2>3. Compartición de datos y uso con modelos de IA</h2>
+          <ul>
+            <li>
+              DeusEx v3 <strong>no vende, alquila ni comparte</strong> datos de usuario de Google con terceros,
+              anunciantes ni corredores de datos.
+            </li>
+            <li>
+              Los datos obtenidos de Google Workspace <strong>no se utilizan para entrenar modelos generalizados
+              de inteligencia artificial o aprendizaje automático (AI/ML)</strong>.
+            </li>
+            <li>
+              Cuando el usuario solicita resumir o redactar contenido usando un proveedor de IA configurado con su
+              propia clave API, solo se envía el fragmento estrictamente necesario para responder esa solicitud puntual.
+              En <strong>Modo Privacidad</strong> (<span class="code-inline">Ctrl+Shift+P</span>), la memoria adaptativa,
+              el portapapeles y la Guía Live quedan congelados.
+            </li>
+          </ul>
+
+          <h2>4. Retención, desconexión y eliminación de datos</h2>
+          <p>
+            DeusEx v3 no mantiene copias en servidores externos. Puedes revocar y eliminar tus datos en cualquier momento:
+          </p>
+          <ol>
+            <li>
+              <strong>Desde la aplicación:</strong> Ve a <em>Integraciones y Dispositivos</em> y haz clic en
+              <strong>Desconectar</strong> en Google, Spotify o TIDAL para borrar inmediatamente los tokens locales.
+            </li>
+            <li>
+              <strong>Desde tu cuenta de Google:</strong> Revoca el acceso de DeusEx v3 en
+              <a href="https://myaccount.google.com/permissions" target="_blank" rel="noopener noreferrer">myaccount.google.com/permissions</a>.
+            </li>
+            <li>
+              <strong>Eliminación total:</strong> Borra la carpeta local
+              <span class="code-inline">%LOCALAPPDATA%\DeusEx\</span> para eliminar cualquier dato o caché persistida en tu PC.
+            </li>
+          </ol>
+
+          <h2>5. Google API Services User Data Policy — Limited Use Disclosure</h2>
+          <div class="callout" data-type="info" style="margin: 0.9rem 0;">
+            <p style="margin: 0 0 0.65rem; color: var(--text-primary);">
+              DeusEx v3's use and transfer to any other app of information received from Google APIs will adhere to the
+              <a
+                href="https://developers.google.com/terms/api-services-user-data-policy"
+                target="_blank"
+                rel="noopener noreferrer"
+              >Google API Services User Data Policy</a>,
+              including the <strong>Limited Use</strong> requirements.
+            </p>
+            <p style="margin: 0;">
+              DeusEx v3 does not use Google Workspace APIs to develop, improve, or train generalized AI and/or ML models.
+              All Google user data is processed solely to provide user-facing personal assistant features requested directly
+              by the user on their own local device.
+            </p>
+          </div>
+
+          <h2>6. Contacto</h2>
+          <p>
+            Si tienes dudas sobre privacidad o manejo de datos, puedes escribir al responsable del proyecto mediante el
+            repositorio oficial en
+            <a href="https://github.com/dazzvlt/deusex-v3/issues" target="_blank" rel="noopener noreferrer">github.com/dazzvlt/deusex-v3</a>
+            o al correo de contacto publicado en la pantalla de consentimiento OAuth de la aplicación.
+          </p>
+        </section>
       </article>
     </div>
   </main>
